@@ -1,0 +1,35 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Backup / temp
+*.bak
+*.tmp
+*.orig
+
+# Python (in case future tooling lands here)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Build artifacts (in case future tooling lands here)
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Local-only notes
+NOTES.local.md
+TODO.local.md
+
+# macOS / Linux meta
+.directory
