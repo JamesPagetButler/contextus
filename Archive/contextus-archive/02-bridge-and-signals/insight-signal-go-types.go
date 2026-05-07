@@ -102,27 +102,27 @@ type GrainSpec struct {
 // TrustReceipt is the compact handoff object that seeds a CTH anchor
 // from a promoted Contextus Insight Signal.
 type TrustReceipt struct {
-	ReceiptID          q8.Addr   `json:"receipt_id"`
-	Claim              string    `json:"claim"`
-	ActivationBaseline float64   `json:"activation_baseline"`
-	Confidence         float64   `json:"confidence"`
-	ProvenanceHash     []byte    `json:"provenance_hash"` // Content-addressed pointer into MuninnDB
-	Rationale          string    `json:"rationale"`
-	SourceNodes        []q8.Addr `json:"source_nodes"`
-	SearchSignature    string    `json:"search_signature"` // Used by horizon scanner
+	ReceiptID          q8.Addr        `json:"receipt_id"`
+	Claim              string         `json:"claim"`
+	ActivationBaseline float64        `json:"activation_baseline"`
+	Confidence         float64        `json:"confidence"`
+	ProvenanceHash     []byte         `json:"provenance_hash"` // Content-addressed pointer into MuninnDB
+	Rationale          string         `json:"rationale"`
+	SourceNodes        []q8.Addr      `json:"source_nodes"`
+	SearchSignature    string         `json:"search_signature"` // Used by horizon scanner
 	SurveyResults      []SurveyResult `json:"survey_results,omitempty"`
-	MintedAt           time.Time `json:"minted_at"`
+	MintedAt           time.Time      `json:"minted_at"`
 }
 
 // SurveyResult is a single piece of evidence found during initial survey
 // or horizon scanning, classified by stance toward the claim.
 type SurveyResult struct {
-	Source    string    `json:"source"`
-	URL       string    `json:"url,omitempty"`
-	Title     string    `json:"title"`
-	Stance    Stance    `json:"stance"`
-	Excerpt   string    `json:"excerpt,omitempty"`
-	FoundAt   time.Time `json:"found_at"`
+	Source  string    `json:"source"`
+	URL     string    `json:"url,omitempty"`
+	Title   string    `json:"title"`
+	Stance  Stance    `json:"stance"`
+	Excerpt string    `json:"excerpt,omitempty"`
+	FoundAt time.Time `json:"found_at"`
 }
 
 // Stance classifies the relationship between a piece of evidence and a claim.
@@ -167,8 +167,8 @@ type ThresholdConfig struct {
 
 // EvidenceRef is a pointer to CTH-internal evidence supporting an anchor.
 type EvidenceRef struct {
-	Type  string  `json:"type"` // "derivation", "measurement", "confluence",
-	                            // "survey_support", "survey_contradict"
+	Type string `json:"type"` // "derivation", "measurement", "confluence",
+	// "survey_support", "survey_contradict"
 	RefID string  `json:"ref_id"`
 	Bits  float64 `json:"bits"` // Confirmed bits contributed (negative for contradicting)
 }
@@ -185,10 +185,10 @@ type EvidenceRef struct {
 // =============================================================================
 
 const (
-	DefaultRhoFloor                    = 0.05  // Visible but non-actionable
-	DefaultHeartbeatBitFraction        = 0.10  // Confirmed bits per strengthening heartbeat
-	DefaultBaseThreshold               = 0.15  // 15% activation delta before heartbeat fires
-	DefaultMaturityScalar              = 0.05  // Threshold rises 5% per internal evidence item
-	DefaultDecayHalfLifeDays           = 90    // Time for rho to halve in silence
-	DefaultInternalEvidenceResistance  = 0.30  // Each derivation reduces decay by 30%
+	DefaultRhoFloor                   = 0.05 // Visible but non-actionable
+	DefaultHeartbeatBitFraction       = 0.10 // Confirmed bits per strengthening heartbeat
+	DefaultBaseThreshold              = 0.15 // 15% activation delta before heartbeat fires
+	DefaultMaturityScalar             = 0.05 // Threshold rises 5% per internal evidence item
+	DefaultDecayHalfLifeDays          = 90   // Time for rho to halve in silence
+	DefaultInternalEvidenceResistance = 0.30 // Each derivation reduces decay by 30%
 )

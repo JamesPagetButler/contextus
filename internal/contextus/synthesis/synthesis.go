@@ -13,8 +13,8 @@ import (
 // Subjects under which session-scoped agents publish ephemeral findings.
 // Verbatim from Spec v1.3 §5.3 / §11.3.
 const (
-	SubjectEdgeBoundary       = "ctx.edge.boundary.>"     // wildcard for {session_id}
-	SubjectCorpusDiversity    = "ctx.corpus.diversity"    // global
+	SubjectEdgeBoundary       = "ctx.edge.boundary.>"       // wildcard for {session_id}
+	SubjectCorpusDiversity    = "ctx.corpus.diversity"      // global
 	SubjectBridgeIntervention = "ctx.bridge.intervention.>" // wildcard for {session_id}
 )
 
@@ -100,14 +100,14 @@ func (a *Agent) signalFromEdgeBoundary(flag types.EdgeScoutFlag, kind types.Anom
 		AnomalyScore:       flag.Significance,
 		Confidence:         flag.Significance,
 		ConfidenceVariance: 0,
-		Persistence:        0, // first emission
+		Persistence:        0,    // first emission
 		Structural:         true, // boundary-blindspot is structural-by-construction
 		FirstSeen:          now,
 		LastSeen:           now,
 		Version:            1,
 		Promoted:           false,
 		Subgraph:           []types.HyperedgeRef{}, // populated when Wyrd contextus/ subpackage lands
-		TraversalPath:      []types.Addr{}, // session-id encoded in SignalID derivation; explicit path is post-Phase-3
+		TraversalPath:      []types.Addr{},         // session-id encoded in SignalID derivation; explicit path is post-Phase-3
 	}
 }
 
