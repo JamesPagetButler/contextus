@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 // Package contextus contains the core data types for the Contextus
 // platform and the Contextus-CTH Bridge.
 //
