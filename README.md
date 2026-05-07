@@ -7,18 +7,24 @@ Contextus is the cross-domain pattern-matching layer for the Helpful Engineering
 
 ## Status
 
-**Crawl phase.** Theory v1.4 + Spec v1.2 complete on disk. Spec v1.3 in flight pending architectural decisions on:
+**Crawl phase.** Theory v1.4 + Spec v1.2 are the canonical references on disk. **Spec v1.3 is being drafted** on `feat/spec-v1.3` — see issue [#1](https://github.com/JamesPagetButler/contextus/issues/1) for scope and the §I4 review-surface framing per [qbp-compute-unit ADR-003](https://github.com/JamesPagetButler/qbp-compute-unit/blob/feat/issue-7-lean2rom/architecture/adr-003-m1-wdevent-observer-invariants.md).
 
-- Discrete `§4.6 Scope Nodes` + `§5.x Evidence Pointer Discipline` sections (per James's placement direction; see [`contextus-wyrd-integration-architecture-2026-05-05.md`](contextus-wyrd-integration-architecture-2026-05-05.md) §3.1)
-- Two pushback resolutions: tier-conditional EvidencePointer fields (option a); cap-per-tier with summary-pointer eviction
-- `SignalSource` enum corrected to `scout | correlation | synthesis` per Spec v1.2 §11.1 (`AgentClass`)
+All four open architectural questions from Spec v1.2 are resolved:
+
+- **Placement** — discrete new `§4.6 Scope Nodes` + `§5.x Evidence Pointer Discipline` sections (`#live-test` seq=42; reverts the architect's earlier distributed-into-existing-sections recommendation, which carried Walk-phase Wyrd-shape import bias).
+- **EvidencePointer sizing** — tier-conditional field population: Skeleton/Distant carry `Locator` + `LocatorKind` only; richer fields populate at Peripheral and above. Distant tier tightened (drops `Note` + `AccessHint`) to preserve the existing §9.1 budget contract.
+- **Evidence list growth bound** — cap-per-tier with summary-pointer eviction (lowest-confidence-N pointers collapse into a single summary pointer); preserves Strengthening semantics from Theory §3.6.3.
+- **`SignalSource` enum** — corrected to `scout | correlation | synthesis` per Spec v1.2 §11.1 `AgentClass`. Edge Scout / Corpus Edge Scout / Bridge Agent do **not** emit Insight Signals — Synthesis is the persistence boundary for ephemeral session-scoped agent output.
+
+A fourth `structural` anomaly_type is added provisionally in v1.3 for Synthesis-promoted signals from session-scoped agent output where `narrative` doesn't fit; **Theory v1.5** will formalize.
 
 ## Read order
 
 1. [`Contextus-Theory-v1.4.md`](Contextus-Theory-v1.4.md) — what Contextus is, why agents are data, the Locale concept, the surveillance / search-mode distinction, three case studies (Yellowstone, whale sharks, black holes), the Colorado River failure analysis.
-2. [`Contextus-Spec-v1.2.md`](Contextus-Spec-v1.2.md) — hypergraph schema, agent taxonomy (Scout / Correlation / Synthesis as global authors of Insight Signals; Edge Scout / Corpus Edge Scout / Bridge Agent as session-scoped non-authors), NATS subjects, MCP interface, retention tiers, CTH bridge integration.
-3. [`contextus-wyrd-integration-architecture-2026-05-05.md`](contextus-wyrd-integration-architecture-2026-05-05.md) — the architecture-instance integration doc that resolves Wyrd's issue #6 (SignalSource correction, scope-node taxonomy, EvidencePointer discipline).
-4. [`MANIFEST.md`](MANIFEST.md) — document inventory.
+2. [`Contextus-Spec-v1.2.md`](Contextus-Spec-v1.2.md) — current canonical spec: hypergraph schema, agent taxonomy (Scout / Correlation / Synthesis as global authors of Insight Signals; Edge Scout / Corpus Edge Scout / Bridge Agent as session-scoped non-authors), NATS subjects, MCP interface, retention tiers, CTH bridge integration. **Superseded by v1.3 once it lands.**
+3. [`contextus-wyrd-integration-architecture-2026-05-05.md`](contextus-wyrd-integration-architecture-2026-05-05.md) — the architecture-instance integration doc that resolves Wyrd's issue #6 (SignalSource correction, scope-node taxonomy, EvidencePointer discipline). Inputs to Spec v1.3.
+4. [`doc/contextus-impl-onboarding-prompt.md`](doc/contextus-impl-onboarding-prompt.md) — bootstrap prompt for fresh contextus-impl sessions; captures decisions taken to date.
+5. [`MANIFEST.md`](MANIFEST.md) — document inventory.
 
 ## Integration with sibling programmes
 
