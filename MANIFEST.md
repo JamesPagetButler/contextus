@@ -6,7 +6,8 @@
 
 | File | Version | Description |
 |---|---|---|
-| `Contextus-Theory-v1.4.md` | v1.4 | Complete theory: §§1–9 including Colorado River test, surveillance mode, edge scouting, corpus scouting, bridge agent, 14 design principles |
+| `Contextus-Theory-v1.5.md` | v1.5 | **Current theory.** Formalises the *structural anomaly* (fourth class, §3.6.2) for findings that describe the structure of the search/exploration process; adds §3.6.6 (Synthesis as Persistence Boundary); reframes the Colorado River failure as worked example (§7.6). Closes issue #3. |
+| `Contextus-Theory-v1.4.md` | v1.4 | Superseded by v1.5 — kept at root for the duration of the v1.5 review window per ADR-003 §I4; will move to `Archive/` after v1.5 PR merges. |
 | `Contextus-Spec-v1.3.md` | v1.3 | **Current spec.** Closes the four v1.2 open architectural questions: §4.6 Scope Nodes (`NT_SCOPE_PHYSICAL`, `NT_SCOPE_CONCEPTUAL`, `HE_SCOPE_MEMBERSHIP`); §5.4 Evidence Pointer Discipline (tier-conditional fields, cap-per-tier eviction); §4.4 Synthesis-as-persistence-boundary clause; §11.1 `EvidencePointer` + `AnomalyStructural`; §11.4 scope-node Go types. Resolves Wyrd issue [#6](https://github.com/JamesPagetButler/wyrd/issues/6) `SignalSource` enum. Reviewed under qbp-compute-unit ADR-003 §I4. |
 | `contextus-wyrd-integration-architecture-2026-05-05.md` | — | Architecture-instance integration doc; resolves Wyrd issue #6; inputs to Spec v1.3. |
 | `doc/contextus-impl-onboarding-prompt.md` | — | Bootstrap prompt for fresh contextus-impl sessions. |
@@ -35,6 +36,5 @@
 
 ## Not Yet Written
 
-- Contextus Theory v1.5 — formalises `AnomalyStructural` introduced provisionally in Spec v1.3 §11.1
 - Contextus–CTH Bridge Synthetic Receipts v0.1 (parameter calibration test cases)
 - Contextus Governance Document
