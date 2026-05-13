@@ -19,7 +19,7 @@ This pattern emerged from the addendum-18-walk meeting closeout (2026-05-07) and
 - BMA Theory Addendum 16 (Cognitive Honing) — Honing Loop for refinement
 - BMA Theory Addendum 17 (Proactive Curiosity) — NT_SIGNAL escalation
 - BMA Theory Addendum 18 (Hypergraph Access Pattern) — Stance × Locale × Scout × Scoring
-- Contextus Spec v1.2 — agent classes (Edge Scout / Corpus Scout / Bridge Agent + Synthesis); scope nodes
+- Contextus Spec v1.3 — agent taxonomy (Edge Scout / Corpus Edge Scout / Bridge Agent / Scout / Correlation / Synthesis / Provenance / Context Builder per §4.2); scope nodes; persistence-boundary NATS subscriptions (§4.4)
 - CTH Theory v0.2 — epistemic-health metrics (ρ_net, ChainFidelity, NaryMI)
 
 The pattern documents how those mechanisms compose into an operational system for a research programme.
@@ -119,16 +119,18 @@ Locale entries become NT_SCOPE_PHYSICAL hyperedges with geometry + temporal_rang
 
 ### 3.3 Scout — the active observer pattern
 
-Scout configuration per agent class (Spec v1.2 §11.1):
+Scout configuration per agent class (Spec v1.3 §4.2 taxonomy):
 
 | Agent | Persistence | Default cadence | Tenant configures |
 |---|---|---|---|
 | **Edge Scout** | Session-scoped (no NT_SIGNAL output; ephemeral NATS events only) | Continuous within session | Per-source URL prefix lists |
 | **Corpus Edge Scout** | Session-scoped | Bounded by corpus query | Per-corpus query patterns |
 | **Bridge Agent** | Session-scoped | Convergence-driven | Cross-domain matching topology |
-| **Scout (global author)** | Persistent | Daily-batch default | Source feeds + scope assignments |
+| **Scout (global author)** | Persistent | Daily-batch default per source; continuous traversal at the federation level per Spec v1.3 §4.2 — daily-batch is the per-source default, not a federation-wide window | Source feeds + scope assignments |
 | **Correlation (global author)** | Persistent | Triggered by Scout output | Stance Type-Node correlation patterns |
-| **Synthesis (global author)** | Persistent | Triggered by Correlation convergence | Promotion threshold + AnomalyKind dispatch |
+| **Synthesis (global author)** | Persistent | NATS-subscribed at the persistence boundary per Spec v1.3 §4.4 (Correlation convergence is one trigger; other persistence-boundary events also fire Synthesis) | Promotion threshold + AnomalyKind dispatch |
+| **Provenance (global author)** | Persistent | Stamped on every persisted node/edge per Spec v1.3 §4.2 | Attribution + lineage source policy |
+| **Context Builder (global author)** | Persistent | On-query assembly per Spec v1.3 §4.2 | Query-time context-assembly policy |
 
 Tenant declares scout config in the tenancy doc. Standard pattern:
 
@@ -259,7 +261,7 @@ Three views; one substrate.
 | View | Substrate | Content | Tier |
 |---|---|---|---|
 | **Wyrd** | Native hypergraph DB | All nodes/edges across all views; the physical store | All tiers |
-| **Contextus** | Wyrd query view | Insight Signals, scope nodes, evidence pointers | Tier-conditional per Spec v1.4 (scalar+categorical at v0.1 of pattern; process at v0.2) |
+| **Contextus** | Wyrd query view | Insight Signals, scope nodes, evidence pointers | Tier model and InsightSignal fields per Spec v1.3 §5.4 (scalar + categorical at v0.1 of pattern; process at v0.2 per P5/P7 staging invariant); Referent lifecycle per forthcoming Spec v1.4 §2.4 |
 | **CTH** | Wyrd query view | Programme inventory: anchors, chains, confluence points, branches | All anchors live as Wyrd `Node` of `Type=cth.anchor.*` |
 
 Contextus and CTH are not separate stores. They are **named projections** on the underlying Wyrd graph. This is what allows BMA's M1 Meta-Watchdog work (#106) to query both consistently.
