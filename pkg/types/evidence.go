@@ -20,13 +20,13 @@ import "time"
 // At Distant the AccessHint and Note fields are dropped to preserve the
 // §9.1 byte budget (§5.4.5).
 type EvidencePointer struct {
-	Locator     string    `json:"locator"`                 // URL, file path, archive coordinate, NATS subject, DOI, telescope_obs_id, etc.
-	LocatorKind string    `json:"locator_kind"`            // "https" | "file" | "archive" | "nats" | "doi" | "telescope_obs_id" | "summary" | ...
-	Hash        []byte    `json:"hash,omitempty"`          // SHA-256 of dereferenced content (Peripheral+)
-	SizeBytes   int64     `json:"size_bytes,omitempty"`    // size of dereferenced content (Peripheral+)
-	LoadedAt    time.Time `json:"loaded_at,omitempty"`     // first-dereference timestamp (Peripheral+)
-	AccessHint  string    `json:"access_hint,omitempty"`   // "cold" | "warm" | "hot" — adapter hint (Peripheral, Near; dropped at Distant)
-	Note        string    `json:"note,omitempty"`          // human-readable provenance (Core only)
+	Locator     string    `json:"locator"`               // URL, file path, archive coordinate, NATS subject, DOI, telescope_obs_id, etc.
+	LocatorKind string    `json:"locator_kind"`          // "https" | "file" | "archive" | "nats" | "doi" | "telescope_obs_id" | "summary" | ...
+	Hash        []byte    `json:"hash,omitempty"`        // SHA-256 of dereferenced content (Peripheral+)
+	SizeBytes   int64     `json:"size_bytes,omitempty"`  // size of dereferenced content (Peripheral+)
+	LoadedAt    time.Time `json:"loaded_at,omitempty"`   // first-dereference timestamp (Peripheral+)
+	AccessHint  string    `json:"access_hint,omitempty"` // "cold" | "warm" | "hot" — adapter hint (Peripheral, Near; dropped at Distant)
+	Note        string    `json:"note,omitempty"`        // human-readable provenance (Core only)
 }
 
 // Tier names used by the retention layer. String constants rather than an

@@ -1,7 +1,7 @@
 package synthesis
 
 import (
-	"github.com/JamesPagetButler/contextus/internal/contextus/types"
+	"github.com/JamesPagetButler/contextus/pkg/types"
 )
 
 // Policy decides whether an ephemeral session-scoped finding warrants

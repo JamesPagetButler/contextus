@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/JamesPagetButler/contextus/internal/contextus/types"
+	"github.com/JamesPagetButler/contextus/pkg/types"
 )
 
 func fixedNow() time.Time { return time.Date(2026, 5, 6, 22, 0, 0, 0, time.UTC) }

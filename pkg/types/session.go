@@ -11,12 +11,12 @@ import "time"
 // warrants persistence, it mints an InsightSignal of AnomalyStructural.
 type EdgeScoutFlag struct {
 	SessionID         string    `json:"session_id"`
-	BoundaryNodeID    string    `json:"boundary_node_id"`     // Node in explored set
-	UnexploredDomain  string    `json:"unexplored_domain"`    // Domain not yet visited
-	ConnectionCount   int       `json:"connection_count"`     // Edges to unexplored domain
-	Significance      float64   `json:"significance"`         // Statistical significance (0–1)
-	RecentChangeCount int       `json:"recent_change_count"`  // Connections changed recently
-	Rank              int       `json:"rank"`                 // Position in current top-N
+	BoundaryNodeID    string    `json:"boundary_node_id"`    // Node in explored set
+	UnexploredDomain  string    `json:"unexplored_domain"`   // Domain not yet visited
+	ConnectionCount   int       `json:"connection_count"`    // Edges to unexplored domain
+	Significance      float64   `json:"significance"`        // Statistical significance (0–1)
+	RecentChangeCount int       `json:"recent_change_count"` // Connections changed recently
+	Rank              int       `json:"rank"`                // Position in current top-N
 	ComputedAt        time.Time `json:"computed_at"`
 }
 

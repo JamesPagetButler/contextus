@@ -3,7 +3,7 @@ package synthesis
 import (
 	"context"
 
-	"github.com/JamesPagetButler/contextus/internal/contextus/types"
+	"github.com/JamesPagetButler/contextus/pkg/types"
 )
 
 // Persister is the abstraction over the Wyrd write path.
