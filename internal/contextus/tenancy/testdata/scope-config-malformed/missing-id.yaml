@@ -1,0 +1,8 @@
+# Malformed: physical_scope entry missing required "id" field.
+physical_scopes:
+  - description: "Scope with no id"
+    type_nodes:
+      - "bma.runtime.geophysical"
+
+conceptual_scopes: []
+scope_memberships: []

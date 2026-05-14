@@ -1,0 +1,11 @@
+# Malformed: salience value 1.5 exceeds the valid range [0.0, 1.0].
+physical_scopes: []
+
+conceptual_scopes:
+  - id: "contextus:scope:conceptual:bad-salience"
+    description: "Salience is out of range"
+    type_nodes:
+      - "qbp.algebra.test"
+    salience: 1.5
+
+scope_memberships: []

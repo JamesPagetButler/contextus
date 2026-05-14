@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JamesPagetButler/contextus/schema/scope-config.schema.json",
+  "title": "ScopeConfig",
+  "description": "Tenant scope-node configuration for federation tenancy. Spec v1.3 §4.6 + §11.4. Consumed by internal/contextus/tenancy.LoadScopeConfig; Wyrd-side counterpart is wyrd/store.LoadScopeConfig (Wyrd PR #40).",
+  "type": "object",
+  "required": ["physical_scopes", "conceptual_scopes", "scope_memberships"],
+  "additionalProperties": false,
+  "properties": {
+    "physical_scopes": {
+      "type": "array",
+      "description": "Physical (spatiotemporal) scope-node declarations. Each entry maps to pkg/types.ScopePhysical.",
+      "items": {
+        "$ref": "#/$defs/PhysicalScopeEntry"
+      }
+    },
+    "conceptual_scopes": {
+      "type": "array",
+      "description": "Conceptual (topic/domain) scope-node declarations. Each entry maps to pkg/types.ScopeConceptual.",
+      "items": {
+        "$ref": "#/$defs/ConceptualScopeEntry"
+      }
+    },
+    "scope_memberships": {
+      "type": "array",
+      "description": "Membership edges connecting scope nodes to member nodes. Each entry maps to pkg/types.ScopeMembership. weight_tier is a Wyrd-envelope field (model.Weight.Tier); it is NOT part of pkg/types.ScopeMembership.",
+      "items": {
+        "$ref": "#/$defs/ScopeMembershipEntry"
+      }
+    }
+  },
+  "$defs": {
+    "PhysicalScopeEntry": {
+      "type": "object",
+      "description": "A physical scope declaration. id + description + type_nodes are the Contextus payload. tier_immune + salience are Wyrd-envelope fields that thread to model.Node.TierImmune / model.Node.Salience.",
+      "required": ["id", "description", "type_nodes"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Non-empty, globally unique scope identifier. Convention: contextus:scope:physical:<slug>."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this physical scope."
+        },
+        "type_nodes": {
+          "type": "array",
+          "description": "Type-node strings that classify this scope. Forward references are allowed at v0.1.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "bounds": {
+          "$ref": "#/$defs/PhysicalBounds",
+          "description": "Spatiotemporal bounds for this physical scope."
+        },
+        "parent_scope_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional parent scope identifier for hierarchical nesting."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Optional free-form tags for this scope.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tier_immune": {
+          "type": "boolean",
+          "description": "Wyrd-envelope field: when true, the resulting model.Node is exempt from tier-based decay. NOT part of pkg/types.ScopePhysical. Defaults to false."
+        },
+        "salience": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Wyrd-envelope field: salience score [0.0, 1.0] threaded to model.Node.Salience. NOT part of pkg/types.ScopePhysical. Defaults to 0.0."
+        }
+      }
+    },
+    "ConceptualScopeEntry": {
+      "type": "object",
+      "description": "A conceptual scope declaration. id + description + type_nodes are the Contextus payload. tier_immune + salience are Wyrd-envelope fields.",
+      "required": ["id", "description", "type_nodes"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Non-empty, globally unique scope identifier. Convention: contextus:scope:conceptual:<slug>."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this conceptual scope."
+        },
+        "type_nodes": {
+          "type": "array",
+          "description": "Type-node strings that classify this scope.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "ontology_uri": {
+          "type": "string",
+          "description": "Optional URI pointing to an ontology term that this scope represents."
+        },
+        "parent_scope_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional parent scope identifier for hierarchical nesting."
+        },
+        "related_scope_ids": {
+          "type": "array",
+          "description": "Optional related scope identifiers.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "tags": {
+          "type": "array",
+          "description": "Optional free-form tags.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tier_immune": {
+          "type": "boolean",
+          "description": "Wyrd-envelope field: when true, the resulting model.Node is exempt from tier-based decay. NOT part of pkg/types.ScopeConceptual. Defaults to false."
+        },
+        "salience": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Wyrd-envelope field: salience score [0.0, 1.0] threaded to model.Node.Salience. NOT part of pkg/types.ScopeConceptual. Defaults to 0.0."
+        }
+      }
+    },
+    "ScopeMembershipEntry": {
+      "type": "object",
+      "description": "A membership edge. scope + member + confidence + provenance_tag + method are the Contextus payload. weight_tier is a Wyrd-envelope field that threads to model.Weight.Tier.",
+      "required": ["scope", "member", "confidence", "provenance_tag", "method"],
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Scope identifier (must match an id in physical_scopes or conceptual_scopes)."
+        },
+        "member": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Member node identifier that belongs to the scope."
+        },
+        "since": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp from which membership holds. Defaults to zero time if omitted."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence that this membership holds [0.0, 1.0]."
+        },
+        "provenance_tag": {
+          "type": "string",
+          "enum": ["P", "D", "T", "I"],
+          "description": "Provenance tag: P=asserted, D=inferred, T=theoretical, I=imported. Mirrors ProvenanceTag* constants."
+        },
+        "method": {
+          "type": "string",
+          "description": "Adapter-defined membership predicate string. See Spec §4.6.5."
+        },
+        "weight_tier": {
+          "type": "string",
+          "description": "Wyrd-envelope field: maps to model.Weight.Tier for the constructed membership hyperedge. NOT part of pkg/types.ScopeMembership. Defaults to 'complex' per Wyrd PR #40 §2.1."
+        }
+      }
+    },
+    "PhysicalBounds": {
+      "type": "object",
+      "description": "Spatiotemporal bounds for a physical scope. lat/lon are [min, max] pairs in decimal degrees; time is [start, end] ISO 8601; height is [min_m, max_m] elevation in metres.",
+      "additionalProperties": false,
+      "properties": {
+        "lat": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Latitude range [south, north] in decimal degrees."
+        },
+        "lon": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Longitude range [west, east] in decimal degrees."
+        },
+        "time": {
+          "type": "array",
+          "items": { "type": "string", "format": "date-time" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Temporal range [start, end] as ISO 8601 timestamps."
+        },
+        "height": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Elevation range [min_m, max_m] in metres. Negative values are below sea level."
+        }
+      }
+    }
+  }
+}

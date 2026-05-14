@@ -1,0 +1,70 @@
+# QBP federation tenant scope-node configuration v0.1
+# Spec v1.3 §4.6 + §11.4; Wyrd PR #40 §2.1 example shape.
+# Physical scopes declare the spatiotemporal observation regions.
+# Conceptual scopes declare the algebraic / epistemic domains.
+# Scope memberships wire physical regions to conceptual domains.
+
+physical_scopes:
+  - id: "contextus:scope:physical:cascadia"
+    description: "Cascadia subduction zone (lat 40-50, lon -130 to -120, surface to 50km depth)"
+    type_nodes:
+      - "bma.runtime.geophysical"
+      - "qbp.tenant.cascadia"
+    bounds:
+      lat: [40.0, 50.0]
+      lon: [-130.0, -120.0]
+      time: ["2010-01-01T00:00:00Z", "2030-01-01T00:00:00Z"]
+      height: [-50000.0, 0.0]
+    tags:
+      - "seismogenic"
+      - "slow-slip"
+
+  - id: "contextus:scope:physical:ligo-hanford"
+    description: "LIGO Hanford Observatory gravitational-wave detector site"
+    type_nodes:
+      - "bma.runtime.astrophysical"
+      - "qbp.tenant.gw-detector"
+    bounds:
+      lat: [46.45, 46.46]
+      lon: [-119.41, -119.40]
+      time: ["2015-09-14T00:00:00Z", "2030-01-01T00:00:00Z"]
+      height: [0.0, 100.0]
+    tags:
+      - "gravitational-wave"
+      - "interferometer"
+
+conceptual_scopes:
+  - id: "contextus:scope:conceptual:slow-slip"
+    description: "Episodic Tremor and Slip phenomena on the Cascadia megathrust"
+    type_nodes:
+      - "bma.runtime.slow-slip"
+      - "qbp.tenant.ets"
+    tags:
+      - "geophysics"
+      - "tremor"
+
+  - id: "contextus:scope:conceptual:hamilton-product"
+    description: "Hamilton-product algebraic structure (foundational; never decay)"
+    type_nodes:
+      - "qbp.algebra.hamilton"
+    tier_immune: true     # threads to model.Node.TierImmune — exempt from Ebbinghaus decay
+    salience: 1.0         # threads to model.Node.Salience — maximum retention priority
+    tags:
+      - "foundational"
+      - "algebra"
+
+scope_memberships:
+  - scope: "contextus:scope:physical:cascadia"
+    member: "contextus:scope:conceptual:slow-slip"
+    confidence: 0.95
+    provenance_tag: "P"
+    method: "geographic-overlap"
+    weight_tier: "complex"
+
+  - scope: "contextus:scope:physical:ligo-hanford"
+    member: "contextus:scope:conceptual:hamilton-product"
+    confidence: 1.0
+    provenance_tag: "T"
+    method: "theoretical-coupling"
+    weight_tier: "complex"
+    since: "2015-09-14T09:50:45Z"
