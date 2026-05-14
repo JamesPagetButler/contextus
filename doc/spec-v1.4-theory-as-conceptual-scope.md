@@ -103,7 +103,7 @@ When implementation unblocks:
 
 2. **What about `cth.confluence.*` and `cth.branch.*` node types — are they in the derivation closure?** Recommendation: yes for `confluence` (definitionally part of the theory's evidence structure); branches are scope-specific (the active branch is in; alternative branches are tagged but not in the closure unless the scope is broader). Flag for cth-implementor.
 
-3. **Multi-anchor theories (a theory rooted at multiple CTH anchors)?** Recommendation: support via multiple `ontology_uri` entries on the same `NT_SCOPE_CONCEPTUAL` (extend the field from string to []string in v1.4 — small Go type change). Defer if controversial.
+3. **Multi-anchor theories (a theory rooted at multiple CTH anchors)?** Recommendation: support via an **additive** extension — keep `OntologyURI string` (single anchor case) and add a new `OntologyURIs []string` field. Loader semantics: if `OntologyURIs` is populated, take the union of derivation closures across the anchors; else fall back to `OntologyURI`. This preserves the federation contract that Wyrd imports `contextus/internal/contextus/types/` directly (per Wyrd PR #40 — wyrd-implementor seq=15 on `#toddle-design`) — additive field changes are forward-wire-compatible; replacing `string` with `[]string` would be a breaking change. Defer if even the additive form is controversial.
 
 ---
 
