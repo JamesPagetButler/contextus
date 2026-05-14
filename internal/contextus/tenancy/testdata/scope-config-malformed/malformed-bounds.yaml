@@ -1,0 +1,12 @@
+# Malformed: bounds.lat has only one element; schema requires minItems: 2.
+physical_scopes:
+  - id: "contextus:scope:physical:bad-bounds"
+    description: "Bounds with only one lat element"
+    type_nodes:
+      - "bma.runtime.geophysical"
+    bounds:
+      lat: [40.0]
+      lon: [-130.0, -120.0]
+
+conceptual_scopes: []
+scope_memberships: []

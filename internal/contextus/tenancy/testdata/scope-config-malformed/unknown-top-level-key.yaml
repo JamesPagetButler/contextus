@@ -1,0 +1,5 @@
+# Malformed: unknown top-level key "extra_key" — additionalProperties: false rejects this.
+physical_scopes: []
+conceptual_scopes: []
+scope_memberships: []
+extra_key: "this should not be here"

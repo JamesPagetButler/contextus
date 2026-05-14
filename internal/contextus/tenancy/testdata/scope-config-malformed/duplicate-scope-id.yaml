@@ -1,0 +1,15 @@
+# Malformed: "contextus:scope:physical:cascadia" appears twice — ErrScopeLoadConflict.
+# Note: JSON Schema validation passes (no schema rule against duplicates); the
+# semantic duplicate check in buildResult() catches this after schema validation.
+physical_scopes:
+  - id: "contextus:scope:physical:cascadia"
+    description: "First declaration"
+    type_nodes:
+      - "bma.runtime.geophysical"
+  - id: "contextus:scope:physical:cascadia"
+    description: "Duplicate — same id"
+    type_nodes:
+      - "bma.runtime.geophysical"
+
+conceptual_scopes: []
+scope_memberships: []
