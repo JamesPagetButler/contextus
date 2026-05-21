@@ -134,7 +134,7 @@ NATS wildcard semantics let downstream consumers subscribe at three granularitie
 
 | Subscription | Meaning |
 |---|---|
-| `ctx.ingest.system.>` | Everything — all operational telemetry across all hosts in the federation. Typical subscriber: the Context Builder agent, MuninnDB writer, federation-level surveillance. |
+| `ctx.ingest.system.>` | Everything — all operational telemetry across all hosts in the federation. Typical subscriber: the Context Builder agent, Mímir writer, federation-level surveillance. |
 | `ctx.ingest.system.bma-prime.>` | Single host, all subsystems. Typical subscriber: a BMA-self-monitoring scout that surveys its own runtime. |
 | `ctx.ingest.system.*.cpu_temp` | Single observation kind, all hosts. Typical subscriber: a federation-level cross-host thermal-pattern surveillance scout. |
 
@@ -270,7 +270,7 @@ That's it. Single concern; clean boundary.
 ### 8.3 Wyrd owns
 
 - The substrate `bma.runtime.*` namespace constants (PR #16, merged) that the adapter's `observation_kind` field maps from on the BMA side
-- The MuninnDB writer downstream of NATS that durably persists adapter-emitted observations
+- The Mímir writer downstream of NATS that durably persists adapter-emitted observations
 
 ### 8.4 CTH owns
 
@@ -300,7 +300,7 @@ The contract: this spec extends only the source-adapter catalogue and the archit
 - BMA-implementor authors the adapter binary in Go.
 - Implementation lives at `internal/bma/ctxadapter/` per CLAUDE.md BMA Go source layout convention.
 - Adapter publishes on the `ctx.ingest.system.<host_id>.<observation_kind>` subject hierarchy.
-- First end-to-end smoke test on BMA-prime: telemetry event → adapter normalisation → NATS publish → MuninnDB write → `HE_SCOPE_MEMBERSHIP` edge minted with `method = "hardware-identifier"`.
+- First end-to-end smoke test on BMA-prime: telemetry event → adapter normalisation → NATS publish → Mímir write → `HE_SCOPE_MEMBERSHIP` edge minted with `method = "hardware-identifier"`.
 - Contextus side has nothing to do at Toddle for this adapter — the source-adapter catalogue entry is the only Contextus artefact needed; the work is BMA-implementor-side.
 
 ### 9.3 Walk
@@ -352,7 +352,7 @@ Per the Contextus standing §I4 reviewer convention (mirroring PR #22 §12.3 rea
 
 - **@qbp-architecture** — federation coherence. The adapter pattern applies to future tenants (Sharp Butler House Node, QBP-CU silicon, Möbius Fusion energy systems) per §9.4 sequencing. First-tenant pattern witness — the adapter as specified for BMA must generalise without surface modification when the second-tenant (QBP-CU at Walk Rung 3 per `project_silicon_ladder.md`) inherits it. Acks required on §§4 (NATS subject hierarchy is federation-wide), 7 (boundary clarity carries forward to all tenants), 9.4 (federation-tenant sequencing), 10.2 (heartbeat convention).
 
-- **@wyrd-implementor** — `bma.runtime.*` namespace constants integration (Wyrd PR #16, merged). The adapter's `observation_kind` field maps from the substrate namespace; substrate-tier compatibility is wyrd-implementor's authority. Also: MuninnDB writer downstream of NATS is the durability boundary. Acks required on §§3 (provenance_tag convention; substrate compatibility), 4.2 (Wyrd namespace cross-reference), 8.3.
+- **@wyrd-implementor** — `bma.runtime.*` namespace constants integration (Wyrd PR #16, merged). The adapter's `observation_kind` field maps from the substrate namespace; substrate-tier compatibility is wyrd-implementor's authority. Also: Mímir writer downstream of NATS is the durability boundary. Acks required on §§3 (provenance_tag convention; substrate compatibility), 4.2 (Wyrd namespace cross-reference), 8.3.
 
 Standing §2.i 4h SLA window applies per CLAUDE.md `feedback_named_reviewer_responsiveness`. Sessionbridge channel-of-record: `sprint-2-2026-05-20` (the channel PR #22 was confirmed on; this adapter is its paired addendum).
 
@@ -362,7 +362,7 @@ Standing §2.i 4h SLA window applies per CLAUDE.md `feedback_named_reviewer_resp
 
 ### 11.1 Contextus
 
-- `~/Documents/Contextus/Contextus-Spec-v1.3.md` §3.1 (Source Adapters catalogue — this spec adds one entry); §3.2 (Ingestion Flow — adapter → NATS → MuninnDB Writer → Context Builder); §4.6 (Scope Nodes — operational scope sibling per PR #22); §11.4 (Go type catalogue — `NT_OBSERVATION` type)
+- `~/Documents/Contextus/Contextus-Spec-v1.3.md` §3.1 (Source Adapters catalogue — this spec adds one entry); §3.2 (Ingestion Flow — adapter → NATS → Mímir Writer → Context Builder); §4.6 (Scope Nodes — operational scope sibling per PR #22); §11.4 (Go type catalogue — `NT_OBSERVATION` type)
 - `~/Documents/Contextus/Contextus-Theory-v1.5.md` §3.6.2 (AnomalyStructural — Synthesis promotion target for operational↔algebraic↔cognitive correlations); §3.6.6 (Synthesis as Persistence Boundary)
 - `~/Documents/Contextus/Contextus-Spec-Addendum-NT-Scope-Operational.md` (PR #22) — third scope sibling spec; this adapter is its input side. Especially §3 (ScopeOperational type), §4 (hardware-class tag taxonomy), §5 (membership predicate `method = "hardware-identifier"`), §6 (YAML integration), §7 (cross-domain Synthesis pattern), §8 (boundary clarity table).
 - `~/Documents/Contextus/doc/cross-domain-hyperedge-minting.md` — design-only-at-v0.1 Contextus design-doc precedent (Wyrd PR #19 dependency; same shape this doc follows).
