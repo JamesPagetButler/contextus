@@ -373,7 +373,7 @@ The federation-additive contract is the same shape established by PR #11 (Spec v
 
 - First operational-scope deployment in BMA-instance scope-config (live BMA-prime host).
 - `ctx-adapter-system` implementation begins (BMA-implementor work).
-- First end-to-end smoke test: telemetry event → `ctx.ingest.system` → MuninnDB write → `HE_SCOPE_MEMBERSHIP` edge minted with `method = "hardware-identifier"`.
+- First end-to-end smoke test: telemetry event → `ctx.ingest.system` → Mímir write → `HE_SCOPE_MEMBERSHIP` edge minted with `method = "hardware-identifier"`.
 
 ### 11.3 Walk
 
