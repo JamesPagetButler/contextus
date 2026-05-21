@@ -1,0 +1,18 @@
+# tenant_profile fixture WITHOUT tenant_subgraph_ref. Exercises the loader's
+# synthesis path per Contextus-Spec-Addendum-Research-Aid-Tenancy §2.4 + §3.3
+# step 3b: cth://tenant/<tenant_id>/subgraph must be synthesised.
+
+tenant_profile:
+  tenant_id: qbp
+  subscriber_profile:
+    accepted_scaffold_types:
+      - PRECEDENT_GRAPH
+    accepted_corpus_classes:
+      - PHYSICS_PREPRINT
+    intended_consumers_default:
+      - self
+  # tenant_subgraph_ref omitted entirely; loader must synthesise.
+
+physical_scopes: []
+conceptual_scopes: []
+scope_memberships: []
