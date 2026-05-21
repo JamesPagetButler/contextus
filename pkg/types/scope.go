@@ -76,6 +76,18 @@ type SubscriberProfile struct {
 // scaffold output for this tenant. Convention-derivable from TenantID;
 // explicit URI permitted for tenants whose subgraph anchor diverges from
 // the convention.
+//
+// Validation discipline:
+//   - YAML-load path: JSON Schema 2020-12 enforces the "^cth://" pattern at
+//     decode time (schema/scope-config.schema.json + the embedded schemaJSON
+//     constant in internal/contextus/tenancy/loader.go; TestSchemaFileMatchesEmbedded
+//     enforces those two stay in sync).
+//   - Programmatic construction (e.g., a future BMA-implementor adapter at
+//     Walk-α): the Go type carries no compile-time guard on URI shape, so
+//     callers constructing TenantSubgraphRef values directly should validate
+//     the "cth://" scheme before publishing the value into the hypergraph.
+//     IsValid() method discipline tracked as Walk-α follow-up per
+//     @qbp-architecture PR #20 §I4 observation (2026-05-21).
 type TenantSubgraphRef struct {
 	URI string `json:"uri"` // canonical form: cth://tenant/<tenant_id>/subgraph
 }
