@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -15,6 +16,12 @@ import (
 
 	"github.com/JamesPagetButler/contextus/pkg/types"
 )
+
+// tenantIDPattern mirrors the JSON-Schema pattern for tenant_profile.tenant_id
+// per Contextus-Spec-Addendum-Research-Aid-Tenancy §3.2. The loader applies it
+// as defence-in-depth after JSON-Schema validation has already run; the two
+// surfaces MUST agree on the pattern.
+var tenantIDPattern = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
 
 // LoadResult separates Contextus-payload structs from Wyrd-envelope metadata.
 //
@@ -35,6 +42,13 @@ type LoadResult struct {
 	// EdgeOptions[i] carries weight_tier for Memberships[i]; absent from
 	// pkg/types.ScopeMembership (per Wyrd PR #40 §2.1 note on weight_tier).
 	EdgeOptions []EdgeOptions
+
+	// TenantProfile carries the optional top-level tenant_profile block per
+	// Contextus-Spec-Addendum-Research-Aid-Tenancy §3.3. Nil when the block
+	// is absent in the YAML (v1.3 baseline backwards compatibility per §3.4);
+	// populated when the tenant declares its federation identity and
+	// subscriber profile. See pkg/types.TenantProfile for field semantics.
+	TenantProfile *types.TenantProfile
 }
 
 // NodeOptions carries the Wyrd-envelope fields for a scope node that are NOT
@@ -61,9 +75,30 @@ type EdgeOptions struct {
 // envelope split. It mirrors the JSON Schema shape exactly so KnownFields
 // strict-mode catches unknown keys.
 type rawConfig struct {
-	PhysicalScopes   []rawPhysical   `yaml:"physical_scopes"`
-	ConceptualScopes []rawConceptual `yaml:"conceptual_scopes"`
-	ScopeMemberships []rawMembership `yaml:"scope_memberships"`
+	PhysicalScopes   []rawPhysical     `yaml:"physical_scopes"`
+	ConceptualScopes []rawConceptual   `yaml:"conceptual_scopes"`
+	ScopeMemberships []rawMembership   `yaml:"scope_memberships"`
+	TenantProfile    *rawTenantProfile `yaml:"tenant_profile"`
+}
+
+// rawTenantProfile mirrors the JSON Schema 2020-12 tenant_profile shape from
+// Contextus-Spec-Addendum-Research-Aid-Tenancy §3.2. It is the intermediate
+// decode target; buildResult lifts it to *types.TenantProfile, synthesising
+// tenant_subgraph_ref.uri when omitted per spec §2.4 + §3.3 step 3.
+type rawTenantProfile struct {
+	TenantID          string                `yaml:"tenant_id"`
+	SubscriberProfile rawSubscriberProfile  `yaml:"subscriber_profile"`
+	TenantSubgraphRef *rawTenantSubgraphRef `yaml:"tenant_subgraph_ref"`
+}
+
+type rawSubscriberProfile struct {
+	AcceptedScaffoldTypes    []string `yaml:"accepted_scaffold_types"`
+	AcceptedCorpusClasses    []string `yaml:"accepted_corpus_classes"`
+	IntendedConsumersDefault []string `yaml:"intended_consumers_default"`
+}
+
+type rawTenantSubgraphRef struct {
+	URI string `yaml:"uri"`
 }
 
 type rawPhysical struct {
@@ -294,7 +329,50 @@ func buildResult(cfg rawConfig) (*LoadResult, error) {
 		res.EdgeOptions = append(res.EdgeOptions, EdgeOptions{WeightTier: wt})
 	}
 
+	// tenant_profile is optional per Contextus-Spec-Addendum-Research-Aid-Tenancy
+	// §3.1; nil-block path preserves the v1.3 backwards-compat contract (§3.4).
+	if cfg.TenantProfile != nil {
+		tp, err := buildTenantProfile(cfg.TenantProfile)
+		if err != nil {
+			return nil, err
+		}
+		res.TenantProfile = tp
+	}
+
 	return res, nil
+}
+
+// buildTenantProfile lifts a decoded rawTenantProfile into a *types.TenantProfile,
+// applying defence-in-depth validation on TenantID and synthesising the
+// tenant_subgraph_ref.uri convention form (cth://tenant/<tenant_id>/subgraph)
+// when omitted, per Contextus-Spec-Addendum-Research-Aid-Tenancy §3.3 steps 1–4.
+//
+// JSON-Schema validation has already run by the time this function executes;
+// the tenant_id regex check here is the spec §3.3 step 3a defence-in-depth
+// requirement.
+func buildTenantProfile(rt *rawTenantProfile) (*types.TenantProfile, error) {
+	if !tenantIDPattern.MatchString(rt.TenantID) {
+		return nil, fmt.Errorf("tenancy: tenant_profile.tenant_id %q does not match required pattern: %w", rt.TenantID, ErrScopeConfigInvalid)
+	}
+
+	uri := ""
+	if rt.TenantSubgraphRef != nil {
+		uri = rt.TenantSubgraphRef.URI
+	}
+	if uri == "" {
+		// Synthesize the canonical convention form per spec §2.4 + §3.3 step 3b.
+		uri = fmt.Sprintf("cth://tenant/%s/subgraph", rt.TenantID)
+	}
+
+	return &types.TenantProfile{
+		TenantID: rt.TenantID,
+		SubscriberProfile: types.SubscriberProfile{
+			AcceptedScaffoldTypes:    rt.SubscriberProfile.AcceptedScaffoldTypes,
+			AcceptedCorpusClasses:    rt.SubscriberProfile.AcceptedCorpusClasses,
+			IntendedConsumersDefault: rt.SubscriberProfile.IntendedConsumersDefault,
+		},
+		TenantSubgraphRef: types.TenantSubgraphRef{URI: uri},
+	}, nil
 }
 
 // schemaURI is the canonical $id for the embedded scope-config schema.

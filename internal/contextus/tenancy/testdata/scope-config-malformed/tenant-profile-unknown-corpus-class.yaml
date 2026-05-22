@@ -1,0 +1,19 @@
+# Malformed tenant_profile fixture for TestTenantProfile_MalformedRejected.
+# accepted_corpus_classes contains "INVALID_CORPUS" which is not in the
+# Contextus-Spec-Addendum-Research-Aid-Tenancy §2.3 canonical enum; JSON-Schema
+# validation must reject this with ErrScopeConfigInvalid.
+
+tenant_profile:
+  tenant_id: qbp
+  subscriber_profile:
+    accepted_scaffold_types:
+      - PRECEDENT_GRAPH
+    accepted_corpus_classes:
+      - PHYSICS_PREPRINT
+      - INVALID_CORPUS
+    intended_consumers_default:
+      - self
+
+physical_scopes: []
+conceptual_scopes: []
+scope_memberships: []

@@ -1,0 +1,32 @@
+# QBP tenant scope-config with tenant_profile block.
+# Mirrors the worked example in Contextus-Spec-Addendum-Research-Aid-Tenancy §6.
+# Exercises the TestTenantProfile_RoundTrip happy path.
+
+tenant_profile:
+  tenant_id: qbp
+  subscriber_profile:
+    accepted_scaffold_types:
+      - PRECEDENT_GRAPH
+      - EVIDENCE_LATTICE
+      - ALGEBRAIC_STRUCTURE_SCAFFOLD
+      - SOURCE_LOCATION_HYPOTHESIS
+    accepted_corpus_classes:
+      - PHYSICS_PREPRINT
+      - JOURNAL_ARTICLE
+      - DATASET_DESCRIPTOR
+      - CODE_REPO
+    intended_consumers_default:
+      - self
+  tenant_subgraph_ref:
+    uri: cth://tenant/qbp/subgraph
+
+physical_scopes: []
+
+conceptual_scopes:
+  - id: scope-theory-qbp-exp-11
+    description: "QBP-EXP-11 GW-GRB temporal correlation theory"
+    type_nodes: ["NT_SCOPE_CONCEPTUAL"]
+    ontology_uri: cth://anchor/qbp-exp-11
+    tags: [qbp, gw-em, narrative-anomaly-candidate]
+
+scope_memberships: []
