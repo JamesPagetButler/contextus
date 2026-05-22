@@ -2,8 +2,12 @@ package tenancy
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
+	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -215,6 +219,90 @@ func TestErrorsIs_Compatibility(t *testing.T) {
 				t.Errorf("errors.Is(err, %v) = false; full error: %v", tc.wantErr, err)
 			}
 		})
+	}
+}
+
+// TestSchemaFileMatchesEmbedded asserts that the embedded schemaJSON constant
+// in loader.go is structurally equivalent (JSON-decode-equal) to the on-disk
+// schema at schema/scope-config.schema.json. This closes the dual-source-of-
+// truth seam (T2 verification spec Candidate G): the two surfaces MUST agree
+// on validation behaviour, even though the embedded form is allowed to differ
+// in whitespace and to omit "description" fields (which are documentation, not
+// validation).
+//
+// If this test fails, one of the two surfaces has drifted and one of:
+//   - the embedded schemaJSON was extended without mirroring the change to
+//     schema/scope-config.schema.json, or
+//   - the on-disk schema was extended without mirroring to schemaJSON.
+//
+// Fix by reconciling the two until JSON-decode-equal (modulo description
+// fields, which are stripped before comparison).
+func TestSchemaFileMatchesEmbedded(t *testing.T) {
+	// Locate schema/scope-config.schema.json relative to this test file.
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller(0) failed; cannot locate schema file")
+	}
+	// thisFile = .../internal/contextus/tenancy/loader_test.go
+	// schemaFile = .../schema/scope-config.schema.json
+	pkgDir := filepath.Dir(thisFile)
+	repoRoot := filepath.Join(pkgDir, "..", "..", "..")
+	schemaFile := filepath.Join(repoRoot, "schema", "scope-config.schema.json")
+
+	fileBytes, err := os.ReadFile(schemaFile)
+	if err != nil {
+		t.Fatalf("read schema file %q: %v", schemaFile, err)
+	}
+
+	var fileDoc, embeddedDoc interface{}
+	if err := json.Unmarshal(fileBytes, &fileDoc); err != nil {
+		t.Fatalf("parse schema file %q: %v", schemaFile, err)
+	}
+	if err := json.Unmarshal([]byte(schemaJSON), &embeddedDoc); err != nil {
+		t.Fatalf("parse embedded schemaJSON: %v", err)
+	}
+
+	// Strip "description" fields from both trees before comparison: the
+	// embedded form intentionally omits them to keep the binary lean, while
+	// the on-disk form includes them for human readability. Structural drift
+	// (properties, required, enum, pattern, type, etc.) is the contract.
+	fileDoc = stripDescriptions(fileDoc)
+	embeddedDoc = stripDescriptions(embeddedDoc)
+
+	if !reflect.DeepEqual(fileDoc, embeddedDoc) {
+		// Marshal both back to JSON for a diff-able error message.
+		fileNorm, _ := json.MarshalIndent(fileDoc, "", "  ")
+		embeddedNorm, _ := json.MarshalIndent(embeddedDoc, "", "  ")
+		t.Fatalf("schema drift detected between schema/scope-config.schema.json and embedded schemaJSON in loader.go.\n"+
+			"The two MUST agree structurally (descriptions/whitespace excepted).\n"+
+			"-- on-disk schema (descriptions stripped) --\n%s\n"+
+			"-- embedded schemaJSON (descriptions stripped) --\n%s\n",
+			fileNorm, embeddedNorm)
+	}
+}
+
+// stripDescriptions recursively removes "description" keys from a decoded
+// JSON tree. Used by TestSchemaFileMatchesEmbedded to compare schemas modulo
+// human-readable documentation.
+func stripDescriptions(v interface{}) interface{} {
+	switch x := v.(type) {
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(x))
+		for k, val := range x {
+			if k == "description" {
+				continue
+			}
+			out[k] = stripDescriptions(val)
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(x))
+		for i, val := range x {
+			out[i] = stripDescriptions(val)
+		}
+		return out
+	default:
+		return v
 	}
 }
 

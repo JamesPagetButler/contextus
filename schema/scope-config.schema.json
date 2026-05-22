@@ -27,6 +27,77 @@
       "items": {
         "$ref": "#/$defs/ScopeMembershipEntry"
       }
+    },
+    "tenant_profile": {
+      "type": "object",
+      "description": "Optional tenant identity + subscriber profile per Contextus-Spec-Addendum-Research-Aid-Tenancy §3.2. Maps to pkg/types.TenantProfile. BMA Spec 9.4 consumer.",
+      "additionalProperties": false,
+      "required": ["tenant_id", "subscriber_profile"],
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "subscriber_profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "accepted_scaffold_types",
+            "accepted_corpus_classes",
+            "intended_consumers_default"
+          ],
+          "properties": {
+            "accepted_scaffold_types": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "PRECEDENT_GRAPH",
+                  "EVIDENCE_LATTICE",
+                  "ALGEBRAIC_STRUCTURE_SCAFFOLD",
+                  "SOURCE_LOCATION_HYPOTHESIS"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "accepted_corpus_classes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "PHYSICS_PREPRINT",
+                  "JOURNAL_ARTICLE",
+                  "DATASET_DESCRIPTOR",
+                  "CODE_REPO",
+                  "CONTRACT_PRECEDENT",
+                  "REGULATORY_TEXT",
+                  "BEEKEEPER_NOTE",
+                  "OTHER"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "intended_consumers_default": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^(self|[a-z][a-z0-9]*(-[a-z0-9]+)*)$"
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "tenant_subgraph_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "uri": {
+              "type": "string",
+              "pattern": "^cth://"
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {

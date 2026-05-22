@@ -297,17 +297,15 @@ func buildResult(cfg rawConfig) (*LoadResult, error) {
 	return res, nil
 }
 
-// mustCompileSchema compiles the JSON Schema 2020-12 for scope-config. Called
-// once from init(); panics on failure (programmer error — schema is embedded in
-// the binary and must always be valid).
-func mustCompileSchema() *jsonschema.Schema {
-	c := jsonschema.NewCompiler()
+// schemaURI is the canonical $id for the embedded scope-config schema.
+const schemaURI = "https://github.com/JamesPagetButler/contextus/schema/scope-config.schema.json"
 
-	// Inline the schema as a string resource so no file-system read is needed
-	// at runtime and the schema travels with the binary. The schema is embedded
-	// verbatim from schema/scope-config.schema.json.
-	const schemaURI = "https://github.com/JamesPagetButler/contextus/schema/scope-config.schema.json"
-	const schemaJSON = `{
+// schemaJSON is the inline JSON Schema 2020-12 for scope-config. It is
+// kept structurally in sync with schema/scope-config.schema.json (the
+// authoritative on-disk schema). The two MUST agree under JSON-decode
+// (whitespace/description differences are tolerated; structural drift is not).
+// TestSchemaFileMatchesEmbedded enforces this contract.
+const schemaJSON = `{
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/JamesPagetButler/contextus/schema/scope-config.schema.json",
   "title": "ScopeConfig",
@@ -317,7 +315,44 @@ func mustCompileSchema() *jsonschema.Schema {
   "properties": {
     "physical_scopes": { "type": "array", "items": { "$ref": "#/$defs/PhysicalScopeEntry" } },
     "conceptual_scopes": { "type": "array", "items": { "$ref": "#/$defs/ConceptualScopeEntry" } },
-    "scope_memberships": { "type": "array", "items": { "$ref": "#/$defs/ScopeMembershipEntry" } }
+    "scope_memberships": { "type": "array", "items": { "$ref": "#/$defs/ScopeMembershipEntry" } },
+    "tenant_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenant_id", "subscriber_profile"],
+      "properties": {
+        "tenant_id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+        "subscriber_profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["accepted_scaffold_types", "accepted_corpus_classes", "intended_consumers_default"],
+          "properties": {
+            "accepted_scaffold_types": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["PRECEDENT_GRAPH", "EVIDENCE_LATTICE", "ALGEBRAIC_STRUCTURE_SCAFFOLD", "SOURCE_LOCATION_HYPOTHESIS"] },
+              "uniqueItems": true
+            },
+            "accepted_corpus_classes": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["PHYSICS_PREPRINT", "JOURNAL_ARTICLE", "DATASET_DESCRIPTOR", "CODE_REPO", "CONTRACT_PRECEDENT", "REGULATORY_TEXT", "BEEKEEPER_NOTE", "OTHER"] },
+              "uniqueItems": true
+            },
+            "intended_consumers_default": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^(self|[a-z][a-z0-9]*(-[a-z0-9]+)*)$" },
+              "uniqueItems": true
+            }
+          }
+        },
+        "tenant_subgraph_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "uri": { "type": "string", "pattern": "^cth://" }
+          }
+        }
+      }
+    }
   },
   "$defs": {
     "PhysicalScopeEntry": {
@@ -377,6 +412,12 @@ func mustCompileSchema() *jsonschema.Schema {
     }
   }
 }`
+
+// mustCompileSchema compiles the JSON Schema 2020-12 for scope-config. Called
+// once from init(); panics on failure (programmer error — schema is embedded in
+// the binary and must always be valid).
+func mustCompileSchema() *jsonschema.Schema {
+	c := jsonschema.NewCompiler()
 
 	// AddResource expects an already-parsed document (any), not a raw reader.
 	var schemaDoc interface{}
