@@ -1,0 +1,75 @@
+# BMA-prime operational-scope fixture per
+# Contextus-Spec-Addendum-NT-Scope-Operational §6.1 worked example.
+#
+# Pattern: one host-level umbrella operational scope (hardware_class: "")
+# nesting per-subsystem child scopes for cpu / disk / gpu / memory.
+# Each scope is tier_immune: true — host identity is foundational.
+#
+# Exercises: round-trip; envelope-split (tier_immune + salience);
+# hierarchical aggregation via parent_scope_id; v0.1 hardware-class
+# taxonomy coverage; runtime.bma-instance Tags entry.
+
+physical_scopes: []
+conceptual_scopes: []
+
+operational_scopes:
+  - id: "contextus:scope:operational:host-bma-prime"
+    description: "BMA-prime host — top-level operational scope (parent for per-subsystem children)"
+    type_nodes:
+      - "NT_SCOPE_OPERATIONAL"
+    host_id: "bma-prime"
+    hardware_class: ""
+    tags:
+      - "runtime.bma-instance"
+    tier_immune: true
+    salience: 1.0
+
+  - id: "contextus:scope:operational:host-bma-prime-cpu"
+    description: "BMA-prime host — CPU subsystem (FX-8350)"
+    type_nodes:
+      - "NT_SCOPE_OPERATIONAL"
+    host_id: "bma-prime"
+    hardware_class: "hardware.cpu"
+    parent_scope_id: "contextus:scope:operational:host-bma-prime"
+    tags:
+      - "runtime.bma-instance"
+    tier_immune: true
+    salience: 0.9
+
+  - id: "contextus:scope:operational:host-bma-prime-disk"
+    description: "BMA-prime host — disk subsystem (Samsung 840 SSD)"
+    type_nodes:
+      - "NT_SCOPE_OPERATIONAL"
+    host_id: "bma-prime"
+    hardware_class: "hardware.disk"
+    parent_scope_id: "contextus:scope:operational:host-bma-prime"
+    tags:
+      - "runtime.bma-instance"
+    tier_immune: true
+    salience: 0.9
+
+  - id: "contextus:scope:operational:host-bma-prime-gpu"
+    description: "BMA-prime host — GPU subsystem (RX 9070 XT)"
+    type_nodes:
+      - "NT_SCOPE_OPERATIONAL"
+    host_id: "bma-prime"
+    hardware_class: "hardware.gpu"
+    parent_scope_id: "contextus:scope:operational:host-bma-prime"
+    tags:
+      - "runtime.bma-instance"
+    tier_immune: true
+    salience: 0.9
+
+  - id: "contextus:scope:operational:host-bma-prime-memory"
+    description: "BMA-prime host — RAM subsystem (32GB DDR3-1866)"
+    type_nodes:
+      - "NT_SCOPE_OPERATIONAL"
+    host_id: "bma-prime"
+    hardware_class: "hardware.memory"
+    parent_scope_id: "contextus:scope:operational:host-bma-prime"
+    tags:
+      - "runtime.bma-instance"
+    tier_immune: true
+    salience: 0.9
+
+scope_memberships: []
