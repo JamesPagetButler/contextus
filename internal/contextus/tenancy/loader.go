@@ -31,9 +31,10 @@ var tenantIDPattern = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
 // at the Wyrd side. Mixing them into the Contextus types would violate the
 // Spec v1.3 §11.4 type contract and break Wyrd's compile-time guarantee.
 type LoadResult struct {
-	PhysicalScopes   []types.ScopePhysical
-	ConceptualScopes []types.ScopeConceptual
-	Memberships      []types.ScopeMembership
+	PhysicalScopes    []types.ScopePhysical
+	ConceptualScopes  []types.ScopeConceptual
+	OperationalScopes []types.ScopeOperational
+	Memberships       []types.ScopeMembership
 
 	// NodeOptions[scope_id] carries envelope metadata that threads to
 	// model.Node.* fields at the Wyrd side; absent from the Contextus types.
@@ -75,10 +76,11 @@ type EdgeOptions struct {
 // envelope split. It mirrors the JSON Schema shape exactly so KnownFields
 // strict-mode catches unknown keys.
 type rawConfig struct {
-	PhysicalScopes   []rawPhysical     `yaml:"physical_scopes"`
-	ConceptualScopes []rawConceptual   `yaml:"conceptual_scopes"`
-	ScopeMemberships []rawMembership   `yaml:"scope_memberships"`
-	TenantProfile    *rawTenantProfile `yaml:"tenant_profile"`
+	PhysicalScopes    []rawPhysical     `yaml:"physical_scopes"`
+	ConceptualScopes  []rawConceptual   `yaml:"conceptual_scopes"`
+	OperationalScopes []rawOperational  `yaml:"operational_scopes"`
+	ScopeMemberships  []rawMembership   `yaml:"scope_memberships"`
+	TenantProfile     *rawTenantProfile `yaml:"tenant_profile"`
 }
 
 // rawTenantProfile mirrors the JSON Schema 2020-12 tenant_profile shape from
@@ -122,6 +124,21 @@ type rawConceptual struct {
 	Tags            []string `yaml:"tags"`
 	TierImmune      bool     `yaml:"tier_immune"`
 	Salience        float64  `yaml:"salience"`
+}
+
+// rawOperational mirrors OperationalScopeEntry in the JSON Schema. host_id and
+// hardware_class are required (the schema enforces). tier_immune + salience are
+// Wyrd-envelope fields per spec §6.2 (precedent: Wyrd PR #40 §2.1).
+type rawOperational struct {
+	ID            string   `yaml:"id"`
+	Description   string   `yaml:"description"`
+	TypeNodes     []string `yaml:"type_nodes"`
+	HostID        string   `yaml:"host_id"`
+	HardwareClass string   `yaml:"hardware_class"`
+	ParentScopeID string   `yaml:"parent_scope_id"`
+	Tags          []string `yaml:"tags"`
+	TierImmune    bool     `yaml:"tier_immune"`
+	Salience      float64  `yaml:"salience"`
 }
 
 type rawMembership struct {
@@ -303,6 +320,26 @@ func buildResult(cfg rawConfig) (*LoadResult, error) {
 		}
 	}
 
+	for _, ro := range cfg.OperationalScopes {
+		if _, dup := seen[ro.ID]; dup {
+			return nil, fmt.Errorf("tenancy: duplicate scope_id %q: %w", ro.ID, ErrScopeLoadConflict)
+		}
+		seen[ro.ID] = struct{}{}
+
+		res.OperationalScopes = append(res.OperationalScopes, types.ScopeOperational{
+			ScopeID:       ro.ID,
+			Name:          ro.Description,
+			HostID:        ro.HostID,
+			HardwareClass: ro.HardwareClass,
+			ParentScopeID: ro.ParentScopeID,
+			Tags:          ro.Tags,
+		})
+		res.NodeOptions[ro.ID] = NodeOptions{
+			TierImmune: ro.TierImmune,
+			Salience:   ro.Salience,
+		}
+	}
+
 	for _, rm := range cfg.ScopeMemberships {
 		since := time.Time{}
 		if rm.Since != "" {
@@ -393,6 +430,7 @@ const schemaJSON = `{
   "properties": {
     "physical_scopes": { "type": "array", "items": { "$ref": "#/$defs/PhysicalScopeEntry" } },
     "conceptual_scopes": { "type": "array", "items": { "$ref": "#/$defs/ConceptualScopeEntry" } },
+    "operational_scopes": { "type": "array", "items": { "$ref": "#/$defs/OperationalScopeEntry" } },
     "scope_memberships": { "type": "array", "items": { "$ref": "#/$defs/ScopeMembershipEntry" } },
     "tenant_profile": {
       "type": "object",
@@ -459,6 +497,22 @@ const schemaJSON = `{
         "ontology_uri": { "type": "string" },
         "parent_scope_id": { "type": "string", "minLength": 1 },
         "related_scope_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "tier_immune": { "type": "boolean" },
+        "salience": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "OperationalScopeEntry": {
+      "type": "object",
+      "required": ["id", "description", "type_nodes", "host_id", "hardware_class"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "type_nodes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "host_id": { "type": "string", "minLength": 1 },
+        "hardware_class": { "type": "string", "enum": ["", "runtime.bma-instance", "hardware.cpu", "hardware.disk", "hardware.gpu", "hardware.memory", "hardware.network"] },
+        "parent_scope_id": { "type": "string", "minLength": 1 },
         "tags": { "type": "array", "items": { "type": "string" } },
         "tier_immune": { "type": "boolean" },
         "salience": { "type": "number", "minimum": 0, "maximum": 1 }

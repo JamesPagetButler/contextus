@@ -26,6 +26,45 @@ type ScopeConceptual struct {
 	Tags            []string `json:"tags,omitempty"`
 }
 
+// ScopeOperational is a hardware-instance-bounded region of the hypergraph
+// whose members are nodes attributable to a named host's named hardware
+// subsystem. See Contextus-Spec-Addendum-NT-Scope-Operational §§2-5.
+//
+// ScopeOperational is the third sibling to ScopePhysical (Spec v1.3 §4.6.2)
+// and ScopeConceptual (§4.6.3); architectural role identical, membership
+// predicate distinct (hardware-identifier-based — exact match on HostID +
+// HardwareClass; hierarchical aggregation via ParentScopeID; no wildcards at
+// v0.1 per spec §5).
+type ScopeOperational struct {
+	ScopeID       string   `json:"scope_id"`
+	Name          string   `json:"name"`
+	HostID        string   `json:"host_id"`
+	HardwareClass string   `json:"hardware_class"`
+	ParentScopeID string   `json:"parent_scope_id,omitempty"`
+	Tags          []string `json:"tags,omitempty"`
+}
+
+// HardwareClass values per Contextus-Spec-Addendum-NT-Scope-Operational §4
+// v0.1 taxonomy. Additive-only forward-compatibility commitment; v0.2
+// expansion candidates documented in spec §4 (e.g. hardware.tpu, hardware.fpga,
+// hardware.power-supply, hardware.thermal-sensor-array, hardware.actuator for
+// Sharp Butler, hardware.power-delivery + hardware.containment for Möbius).
+// Speculative tags refused at v0.1 — real federation work-target need is the
+// trigger (cart-driven tool-acquisition principle).
+//
+// HardwareClassRuntimeBMAInstance is a conventional Tags entry (NOT a value
+// for ScopeOperational.HardwareClass); it brackets a BMA federation tenant's
+// host. Sibling runtime.* tags will accompany new tenant classes
+// (runtime.sharp-butler-instance, runtime.moebius-instance, runtime.qbp-cu-instance).
+const (
+	HardwareClassRuntimeBMAInstance = "runtime.bma-instance"
+	HardwareClassHardwareCPU        = "hardware.cpu"
+	HardwareClassHardwareDisk       = "hardware.disk"
+	HardwareClassHardwareGPU        = "hardware.gpu"
+	HardwareClassHardwareMemory     = "hardware.memory"
+	HardwareClassHardwareNetwork    = "hardware.network"
+)
+
 // ScopeMembership is the on-edge metadata for HE_SCOPE_MEMBERSHIP. The edge
 // itself is a Wyrd model.Hyperedge of arity 2 connecting a scope node to a
 // member node. Spec v1.3 §4.6.4 + §11.4.

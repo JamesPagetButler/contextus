@@ -21,6 +21,13 @@
         "$ref": "#/$defs/ConceptualScopeEntry"
       }
     },
+    "operational_scopes": {
+      "type": "array",
+      "description": "Operational (hardware-instance-bounded) scope-node declarations per Contextus-Spec-Addendum-NT-Scope-Operational §6. Each entry maps to pkg/types.ScopeOperational. Third sibling to physical_scopes + conceptual_scopes; membership predicate is hardware-identifier-based (exact match on host_id + hardware_class; no wildcards at v0.1).",
+      "items": {
+        "$ref": "#/$defs/OperationalScopeEntry"
+      }
+    },
     "scope_memberships": {
       "type": "array",
       "description": "Membership edges connecting scope nodes to member nodes. Each entry maps to pkg/types.ScopeMembership. weight_tier is a Wyrd-envelope field (model.Weight.Tier); it is NOT part of pkg/types.ScopeMembership.",
@@ -208,6 +215,71 @@
           "minimum": 0,
           "maximum": 1,
           "description": "Wyrd-envelope field: salience score [0.0, 1.0] threaded to model.Node.Salience. NOT part of pkg/types.ScopeConceptual. Defaults to 0.0."
+        }
+      }
+    },
+    "OperationalScopeEntry": {
+      "type": "object",
+      "description": "An operational scope declaration per Contextus-Spec-Addendum-NT-Scope-Operational §3 + §6. id + description + type_nodes + host_id + hardware_class are the Contextus payload. tier_immune + salience are Wyrd-envelope fields (precedent: Wyrd PR #40 §2.1).",
+      "required": ["id", "description", "type_nodes", "host_id", "hardware_class"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Non-empty, globally unique scope identifier. Convention: contextus:scope:operational:<slug>."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this operational scope."
+        },
+        "type_nodes": {
+          "type": "array",
+          "description": "Type-node strings that classify this scope. Conventional value: NT_SCOPE_OPERATIONAL.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "host_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Federation-unique host identifier per spec §3. Conventionally derived from /etc/machine-id, hardware UUID, or a beekeeper-asserted identifier. Examples: bma-prime, sharp-butler-house-node-01, qbp-cu-silicon-rev-A."
+        },
+        "hardware_class": {
+          "type": "string",
+          "description": "One of the v0.1 hardware-class tags per spec §4. Empty string permitted for host-level umbrella scopes (a host-level operational scope with hardware_class=\"\" nests per-subsystem children via parent_scope_id).",
+          "enum": [
+            "",
+            "runtime.bma-instance",
+            "hardware.cpu",
+            "hardware.disk",
+            "hardware.gpu",
+            "hardware.memory",
+            "hardware.network"
+          ]
+        },
+        "parent_scope_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional parent scope identifier for hierarchical nesting (host umbrella → per-subsystem child pattern per spec §5)."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Optional free-form tags. Conventional inclusion: a runtime.<instance-class> tag identifying the federation tenant the host serves (e.g. runtime.bma-instance).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tier_immune": {
+          "type": "boolean",
+          "description": "Wyrd-envelope field: when true, the resulting model.Node is exempt from tier-based decay. NOT part of pkg/types.ScopeOperational. Defaults to false. Operational scopes are typically tier_immune: true per spec §6.2."
+        },
+        "salience": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Wyrd-envelope field: salience score [0.0, 1.0] threaded to model.Node.Salience. NOT part of pkg/types.ScopeOperational. Defaults to 0.0."
         }
       }
     },

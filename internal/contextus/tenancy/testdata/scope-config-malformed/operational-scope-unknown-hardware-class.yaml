@@ -1,0 +1,17 @@
+# Malformed: hardware_class "hardware.fpga" is NOT in the v0.1 enum
+# per Contextus-Spec-Addendum-NT-Scope-Operational §4. v0.2 may introduce
+# hardware.fpga via spec-amendment PR, but the v0.1 schema MUST reject it.
+# Expected: ErrScopeConfigInvalid (JSON Schema enum validation failure).
+
+physical_scopes: []
+conceptual_scopes: []
+
+operational_scopes:
+  - id: "contextus:scope:operational:host-experimental-fpga"
+    description: "Experimental FPGA subsystem — unknown to v0.1 taxonomy"
+    type_nodes:
+      - "NT_SCOPE_OPERATIONAL"
+    host_id: "experimental-host-01"
+    hardware_class: "hardware.fpga"
+
+scope_memberships: []

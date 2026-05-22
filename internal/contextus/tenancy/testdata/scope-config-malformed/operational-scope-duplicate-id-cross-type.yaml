@@ -1,0 +1,22 @@
+# Malformed: operational_scope.id collides with a physical_scope.id.
+# Federation-unique scope_id discipline is enforced ACROSS scope types
+# (the seen-map in buildResult is single-namespace). Expected:
+# ErrScopeLoadConflict (semantic duplicate-id check after schema validation).
+
+physical_scopes:
+  - id: "contextus:scope:shared-collision-id"
+    description: "Physical scope with the colliding id (declared first)"
+    type_nodes:
+      - "bma.runtime.geophysical"
+
+conceptual_scopes: []
+
+operational_scopes:
+  - id: "contextus:scope:shared-collision-id"
+    description: "Operational scope with the same id — cross-type collision"
+    type_nodes:
+      - "NT_SCOPE_OPERATIONAL"
+    host_id: "bma-prime"
+    hardware_class: "hardware.cpu"
+
+scope_memberships: []
