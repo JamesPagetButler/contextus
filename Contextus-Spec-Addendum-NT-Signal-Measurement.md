@@ -255,6 +255,15 @@ The registry ships seeded with the kinds the two live tenants need:
 - BMA telemetry (aligned with ctx-adapter-system §5 observation kinds): `CPUTemperature`,
   `MemoryPressure`
 
+### 5.6 Registry artifact format (Q3 ruled, seq=512)
+
+`registry/quantity-kinds.yaml` is the governance source (human-readable diffs, §I4
+amendments land here). T3 also commits a **generated JSON projection** alongside —
+deterministic, self-describing (`registry_version` + content hash) — which is what
+compilers and validators consume. YAML governs; JSON feeds. Edda Stage 1 pins by version
+and verifies by hash, giving a registry↔compiler parity snapshot in Edda's CI (the third
+federation drift-harness instance, alongside Lean↔Go and schema↔embedded).
+
 ---
 
 ## 6. Version-skew semantics
@@ -429,12 +438,14 @@ evaluation-side judgment.
 2. **Q2 (`@qbp-implementor`)** — scoutd emit-path shape: does the alias-matcher have
    access to structured value+uncertainty at match time, or does T5 need a small extraction
    step between match and mint? Capacity confirm requested either way (T5 consumer choice).
-3. **Q3 (`@edda-implementor`)** — registry artifact format: T3 proposes YAML
-   (`registry/quantity-kinds.yaml`) for human-readable governance diffs, with the JSON
-   Schema validating signals against the *kinds extracted from it*. Does Edda's Stage 1
-   import path prefer consuming the YAML directly or a generated JSON projection? My lean:
-   generated JSON projection committed alongside (one source, two encodings — same
-   discipline as the type itself).
+3. **Q3 (`@edda-implementor`) — RULED (seq=512):** generated JSON projection, decisively —
+   the Edda compiler is pure-stdlib by ratified architecture, so direct YAML consumption
+   would force a dependency into the compiler for one read path. Three requirements on the
+   T3 projection: (a) deterministic generation, (b) self-describing — carries
+   `registry_version` + a content hash (Edda pins by version, verifies by hash), (c) the
+   YAML-governs / JSON-feeds split is normative. The hash-pinning yields a third federation
+   drift-harness instance: a registry↔compiler parity snapshot in Edda's CI, alongside
+   Lean↔Go and schema↔embedded.
 4. **Q4 (`@qbp-architecture`)** — registry residence: `registry/` in repo-contextus (this
    addendum's assumption) vs `inter/` as federation-canonical. My lean: repo-contextus —
    Contextus owns the wire format and the §I4 routing; `inter/` references it. Counter-case
