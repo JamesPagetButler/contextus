@@ -191,6 +191,14 @@ floor. WCET note (per seq=342): the gate's worst-case cost is certified over the
 shape — `bounded(config_read) + compare + within_uncertainty` — with `class_floor` as a
 bounded-read runtime parameter; the compiler never needs its value.
 
+**Crawl residence (Q1 ruled by cth-implementor, live-test seq=511):** CTH v0.3 has no
+reified anchor-class record (classes are implicit in ID prefixes), so the Crawl artifact
+is a top-level optional `class_floors` map in the canonical CTH inventory — object-valued
+entries, witnessed by inventory change-control, bounded-read (the evaluator already holds
+the inventory), **fail-closed default**: a class absent from the map permits no automated
+status change until its owner sets a floor. Setting the floor is a governance act, the
+same declared-asymmetry direction as §3. Additive-optional ⟹ minor semver on the CTH side.
+
 The bridge performs schema validation only (shape, types, registry membership). It does
 not filter on confidence.
 
@@ -413,11 +421,11 @@ evaluation-side judgment.
 
 ## 13. Open questions for §I4 reviewers
 
-1. **Q1 (`@cth-implementor`)** — `class_floor` witnessed-config residence: per-anchor-class
-   config lives CTH-side (this addendum assumes it). Is the right Crawl artifact a field on
-   the CTH anchor-class record, or a separate config surface? My lean: anchor-class record
-   field — it keeps the floor adjacent to what it governs and inherits CTH's existing
-   change-control.
+1. **Q1 (`@cth-implementor`) — RULED (seq=511, folded into §4.1):** `class_floors` map in
+   the canonical CTH inventory (no anchor-class record exists in v0.3), fail-closed
+   default, additive-optional minor semver. Non-blocking note carried to T4: ambiguous-split
+   `Consistent` verdicts carry a `via_ambiguous_split` marker in the evaluation record so
+   generous-interpretation matches stay auditable.
 2. **Q2 (`@qbp-implementor`)** — scoutd emit-path shape: does the alias-matcher have
    access to structured value+uncertainty at match time, or does T5 need a small extraction
    step between match and mint? Capacity confirm requested either way (T5 consumer choice).
