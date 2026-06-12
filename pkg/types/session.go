@@ -52,3 +52,34 @@ type BridgeIntervention struct {
 	Confidence           float64   `json:"confidence"`             // Confidence this is a local minimum
 	DetectedAt           time.Time `json:"detected_at"`
 }
+
+// OperationalCorrelation is a cross-domain correlation event produced by
+// surveillance-mode scouts monitoring operational-scope telemetry streams.
+// Published to ctx.operational.correlation when a scout detects that
+// scalar-referent divergence on one or more hardware subsystems correlates
+// with a pattern of interest (algebraic-integrity drift, cognitive-trace gap,
+// or co-occurrence across multiple hardware classes).
+//
+// Ephemeral; same persistence-boundary discipline as EdgeScoutFlag. Synthesis
+// promotes durable cross-domain findings as InsightSignal of AnomalyStructural.
+// See Contextus-Spec-Addendum-NT-Scope-Operational §7 + Spec v1.4 §2.4.
+//
+// CorrelationID is the surveillance-session-scoped dedup key. A scout that
+// re-evaluates the same cross-domain signature must use the same CorrelationID
+// so Synthesis can apply the idempotency contract.
+type OperationalCorrelation struct {
+	// CorrelationID is the dedup key for this correlation event.
+	CorrelationID string `json:"correlation_id"`
+
+	// Referents is the set of scalar-referent observations that constitute
+	// the correlation. At least one referent is required; a cross-domain
+	// correlation requires referents from two or more distinct ScopeIDs.
+	Referents []ScalarReferent `json:"referents"`
+
+	// MaxScore is the maximum ScalarReferent.Score across all Referents.
+	// Pre-computed by the scout for Policy evaluation without iterating.
+	MaxScore float64 `json:"max_score"`
+
+	// DetectedAt is the scout's detection timestamp.
+	DetectedAt time.Time `json:"detected_at"`
+}

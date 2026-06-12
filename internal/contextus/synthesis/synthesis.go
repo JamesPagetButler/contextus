@@ -71,6 +71,36 @@ func (a *Agent) HandleCorpusDiversity(ctx context.Context, report types.CorpusDi
 	return id, true, nil
 }
 
+// SubjectOperationalCorrelation is the NATS subject on which surveillance-mode
+// scouts publish OperationalCorrelation events for Synthesis evaluation.
+// Format: ctx.operational.correlation (global; no session suffix — operational
+// surveillance is continuous, not session-scoped).
+const SubjectOperationalCorrelation = "ctx.operational.correlation"
+
+// HandleOperationalCorrelation processes an OperationalCorrelation from
+// ctx.operational.correlation. Returns the minted signal's SignalID and true
+// if the correlation warranted promotion as an AnomalyStructural signal.
+//
+// This is the Spec v1.4 §2.4 Referent path: surveillance-mode scouts compute
+// scalar-referent divergence on operational-telemetry streams and publish
+// OperationalCorrelation events; Synthesis decides whether the cross-domain
+// pattern crosses the persistence-boundary threshold.
+//
+// See Contextus-Spec-Addendum-NT-Scope-Operational §7 + Spec v1.4 §2.4 for
+// the full cross-domain Synthesis pattern.
+func (a *Agent) HandleOperationalCorrelation(ctx context.Context, c types.OperationalCorrelation) (types.Addr, bool, error) {
+	kind := a.Policy.EvaluateOperationalCorrelation(c)
+	if kind == "" {
+		return types.Addr{}, false, nil
+	}
+	sig := a.signalFromOperationalCorrelation(c, kind)
+	id, err := a.Persister.MintSignal(ctx, sig)
+	if err != nil {
+		return types.Addr{}, false, fmt.Errorf("synthesis: operational-correlation mint: %w", err)
+	}
+	return id, true, nil
+}
+
 // HandleBridgeIntervention processes a BridgeIntervention from
 // ctx.bridge.intervention.{session_id}. Returns the minted signal's SignalID
 // and true if the intervention warranted promotion.
@@ -148,6 +178,39 @@ func (a *Agent) signalFromBridgeIntervention(iv types.BridgeIntervention, kind t
 		Promoted:           false,
 		Subgraph:           []types.HyperedgeRef{},
 		TraversalPath:      []types.Addr{},
+	}
+}
+
+// signalFromOperationalCorrelation converts an OperationalCorrelation into an
+// InsightSignal. AnomalyScore is MaxScore (the peak referent divergence across
+// the correlated hardware subsystems). Confidence equals AnomalyScore for v1.4;
+// future revisions may factor in observation count and window length.
+//
+// The Referents field on the returned signal carries the full
+// predicted-vs-observed pairs per Spec v1.4 §2.4 — the downstream consumer
+// (BMA Conscious-A/B forensic recall; CTH for hypothesis input) can inspect
+// both the summary score and the individual referent details.
+//
+// Structural=true reflects that operational↔cognitive or operational↔algebraic
+// correlations are about the structure of the running system (Theory v1.5 §3.6.2).
+func (a *Agent) signalFromOperationalCorrelation(c types.OperationalCorrelation, kind types.AnomalyKind) types.InsightSignal {
+	now := a.Now()
+	return types.InsightSignal{
+		SignalID:           deterministicAddr("operational-correlation", c.CorrelationID),
+		AgentType:          types.AgentSynthesis,
+		AnomalyType:        kind,
+		AnomalyScore:       c.MaxScore,
+		Confidence:         c.MaxScore,
+		ConfidenceVariance: 0,
+		Persistence:        0,
+		Structural:         true, // runtime-structural: observation about the running system
+		FirstSeen:          now,
+		LastSeen:           now,
+		Version:            1,
+		Promoted:           false,
+		Subgraph:           []types.HyperedgeRef{},
+		TraversalPath:      []types.Addr{},
+		Referents:          c.Referents,
 	}
 }
 

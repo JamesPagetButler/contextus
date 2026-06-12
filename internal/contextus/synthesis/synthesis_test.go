@@ -216,4 +216,194 @@ func TestPolicy_DefaultThresholds(t *testing.T) {
 	if p.BridgeInterventionConfidenceThreshold != 0.75 {
 		t.Errorf("BridgeInterventionConfidenceThreshold: want 0.75, got %v", p.BridgeInterventionConfidenceThreshold)
 	}
+	if p.OperationalCorrelationScoreThreshold != 0.70 {
+		t.Errorf("OperationalCorrelationScoreThreshold: want 0.70, got %v", p.OperationalCorrelationScoreThreshold)
+	}
+}
+
+// TestOperationalCorrelation_BelowThreshold_Skipped verifies that an
+// OperationalCorrelation with MaxScore below the policy threshold stays
+// ephemeral (no mint, promoted=false).
+//
+// AC-6: cross-domain correlation test — below-threshold case.
+func TestOperationalCorrelation_BelowThreshold_Skipped(t *testing.T) {
+	a, p := newTestAgent()
+	corr := types.OperationalCorrelation{
+		CorrelationID: "corr-bma-prime-below",
+		Referents: []types.ScalarReferent{
+			{
+				Label:     "cpu_temp_5min_avg_celsius",
+				Predicted: 65.0,
+				Observed:  67.0,
+				Score:     0.031, // |67-65|/65 ≈ 0.031 — well below 0.70
+				ScopeID:   "contextus:scope:operational:host-bma-prime-cpu",
+			},
+		},
+		MaxScore: 0.031,
+	}
+	_, ok, err := a.HandleOperationalCorrelation(context.Background(), corr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ok {
+		t.Error("expected promoted=false below threshold; got true")
+	}
+	if p.Calls != 0 {
+		t.Errorf("expected MintSignal not called; got %d", p.Calls)
+	}
+}
+
+// TestOperationalCorrelation_NoReferents_Skipped verifies that an
+// OperationalCorrelation with an empty Referents slice is always skipped,
+// regardless of MaxScore.
+//
+// AC-6: cross-domain correlation test — empty-referent guard.
+func TestOperationalCorrelation_NoReferents_Skipped(t *testing.T) {
+	a, p := newTestAgent()
+	corr := types.OperationalCorrelation{
+		CorrelationID: "corr-empty-referents",
+		Referents:     nil,
+		MaxScore:      0.99,
+	}
+	_, ok, err := a.HandleOperationalCorrelation(context.Background(), corr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ok {
+		t.Error("expected promoted=false for empty-referent correlation; got true")
+	}
+	if p.Calls != 0 {
+		t.Errorf("expected MintSignal not called; got %d", p.Calls)
+	}
+}
+
+// TestOperationalCorrelation_MintsStructuralWithReferent verifies the full
+// AC-6 path: when a cross-domain OperationalCorrelation (cpu_temp trending
+// with algebraic-integrity drift as a referent proxy) has MaxScore above the
+// threshold, Synthesis mints an AnomalyStructural InsightSignal and the
+// signal carries Referents with non-zero scores.
+//
+// This is the Spec v1.4 §2.4 Referent promotion path: predicted-vs-observed
+// scalar divergence on operational-telemetry streams drives AnomalyStructural
+// minting. See Contextus-Spec-Addendum-NT-Scope-Operational §7 worked
+// pattern A (thermal stress ↔ algebraic-integrity drift).
+//
+// AC-6: cross-domain correlation test — above-threshold case.
+func TestOperationalCorrelation_MintsStructuralWithReferent(t *testing.T) {
+	a, p := newTestAgent()
+
+	// Worked Pattern A (spec addendum §7.1): thermal stress ↔ algebraic-integrity drift.
+	// CPU temperature well above predicted; disk SMART warning trending up.
+	corr := types.OperationalCorrelation{
+		CorrelationID: "corr-bma-prime-thermal-algebraic-2026-06-12",
+		Referents: []types.ScalarReferent{
+			{
+				Label:     "cpu_temp_5min_avg_celsius",
+				Predicted: 65.0,
+				Observed:  82.0, // thermal stress: |82-65|/65 ≈ 0.26 → score 0.26
+				Score:     0.26,
+				ScopeID:   "contextus:scope:operational:host-bma-prime-cpu",
+			},
+			{
+				Label:     "disk_smart_reallocated_sectors",
+				Predicted: 0.0,
+				Observed:  3.0, // non-zero reallocated sectors → capped score 1.0
+				Score:     1.0,
+				ScopeID:   "contextus:scope:operational:host-bma-prime-disk",
+			},
+		},
+		MaxScore: 1.0, // max across referents
+	}
+
+	id, ok, err := a.HandleOperationalCorrelation(context.Background(), corr)
+	if err != nil {
+		t.Fatalf("HandleOperationalCorrelation: unexpected error: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected promoted=true for above-threshold operational correlation; got false")
+	}
+	if p.Calls != 1 {
+		t.Fatalf("expected exactly one MintSignal call; got %d", p.Calls)
+	}
+
+	got := p.LastSignal
+
+	// Signal metadata checks.
+	if got.AgentType != types.AgentSynthesis {
+		t.Errorf("agent_type: want %q, got %q", types.AgentSynthesis, got.AgentType)
+	}
+	if got.AnomalyType != types.AnomalyStructural {
+		t.Errorf("anomaly_type: want %q (runtime-structural), got %q", types.AnomalyStructural, got.AnomalyType)
+	}
+	if got.AnomalyScore != 1.0 {
+		t.Errorf("anomaly_score: want 1.0 (MaxScore), got %v", got.AnomalyScore)
+	}
+	if !got.Structural {
+		t.Error("structural bool: want true (runtime-structural: about the running system), got false")
+	}
+	if got.FirstSeen != fixedNow() {
+		t.Errorf("first_seen: want fixedNow, got %v", got.FirstSeen)
+	}
+	if got.SignalID != id {
+		t.Errorf("returned id %x != minted signal id %x", id, got.SignalID)
+	}
+
+	// Referent checks — this is the AC-6 core: the signal must carry the
+	// predicted-vs-observed pairs so downstream consumers can inspect both
+	// the aggregate score and the per-subsystem divergence.
+	if got.Referents == nil {
+		t.Fatal("Referents: want non-nil slice on AnomalyStructural operational signal; got nil")
+	}
+	if len(got.Referents) != 2 {
+		t.Fatalf("Referents: want 2 entries (cpu + disk); got %d", len(got.Referents))
+	}
+
+	// Index by ScopeID for order-independent assertions.
+	refByScope := make(map[string]types.ScalarReferent, len(got.Referents))
+	for _, r := range got.Referents {
+		refByScope[r.ScopeID] = r
+	}
+
+	cpu, ok := refByScope["contextus:scope:operational:host-bma-prime-cpu"]
+	if !ok {
+		t.Error("Referents: missing cpu scope referent")
+	} else {
+		if cpu.Score <= 0 {
+			t.Errorf("cpu referent score: want > 0, got %v", cpu.Score)
+		}
+		if cpu.Observed <= cpu.Predicted {
+			t.Errorf("cpu referent: Observed (%v) should exceed Predicted (%v) for thermal-stress pattern", cpu.Observed, cpu.Predicted)
+		}
+	}
+
+	disk, ok := refByScope["contextus:scope:operational:host-bma-prime-disk"]
+	if !ok {
+		t.Error("Referents: missing disk scope referent")
+	} else {
+		if disk.Score != 1.0 {
+			t.Errorf("disk referent score: want 1.0 (capped, non-zero reallocated sectors), got %v", disk.Score)
+		}
+	}
+}
+
+// TestOperationalCorrelation_DeterministicID verifies the idempotency contract:
+// two evaluations of the same OperationalCorrelation (same CorrelationID)
+// produce the same SignalID. Synthesis must treat the SignalID as the dedup key.
+//
+// AC-6: deterministic SignalID for operational correlations.
+func TestOperationalCorrelation_DeterministicID(t *testing.T) {
+	a, _ := newTestAgent()
+	corr := types.OperationalCorrelation{
+		CorrelationID: "corr-bma-prime-determinism-test",
+		Referents: []types.ScalarReferent{
+			{Label: "cpu_temp", Predicted: 65.0, Observed: 83.0, Score: 0.277,
+				ScopeID: "contextus:scope:operational:host-bma-prime-cpu"},
+		},
+		MaxScore: 0.277,
+	}
+	id1, _, _ := a.HandleOperationalCorrelation(context.Background(), corr)
+	id2, _, _ := a.HandleOperationalCorrelation(context.Background(), corr)
+	if id1 != id2 {
+		t.Errorf("expected deterministic SignalID; got %x vs %x", id1, id2)
+	}
 }
