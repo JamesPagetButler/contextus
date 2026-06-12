@@ -1,0 +1,37 @@
+{
+  "$schema": "https://github.com/JamesPagetButler/contextus/registry/quantity-kinds-schema.json",
+  "registry_version": 1,
+  "content_hash": "8892adf67b90670b716c92d10e07e99f0197c9a1ac5ef84ede1fb35569dd8b00",
+  "generated_at": "2026-06-12T04:27:54Z",
+  "generated_by": "cmd/registry-gen",
+  "kinds": [
+    {
+      "kind": "CPUTemperature",
+      "owner_tenant": "bma",
+      "unit_system": "si",
+      "description": "CPU package temperature in Kelvin (SI). BMA autonomic subsystem reports this to Contextus via the NT_SCOPE_OPERATIONAL hardware.cpu scope. Used by BMA-AUTO-S thermal staging (Stage 1 threshold detection).\n",
+      "introduced_in": 1
+    },
+    {
+      "kind": "GravitationalWaveStrain",
+      "owner_tenant": "qbp",
+      "unit_system": "dimensionless",
+      "description": "Dimensionless gravitational-wave strain h = ΔL/L. Used by QBP scouts monitoring LIGO/LISA GW strain timeseries for anomalies correlated with Fermi GBM gamma-ray bursts (QBP-EXP-11 GW-GRB pipeline).\n",
+      "introduced_in": 1
+    },
+    {
+      "kind": "MemoryPressure",
+      "owner_tenant": "bma",
+      "unit_system": "dimensionless",
+      "description": "Memory pressure as a dimensionless fraction [0, 1]: ratio of allocated memory to total available memory in the BMA Crawl container (14 GB cap). Value 1.0 means fully saturated. Reported by BMA autonomic subsystem to the BMA telemetry scout.\n",
+      "introduced_in": 1
+    },
+    {
+      "kind": "SoundSpeedPeak",
+      "owner_tenant": "qbp",
+      "unit_system": "dimensionless",
+      "description": "Peak sound speed in units of c (dimensionless). The motivating quantity from the seq=317 live-test failure: a scout reported 0.68 ± 0.14 c and a language model declared it \"not near 2/3\" — structurally impossible after this schema contract. Spec Addendum §1.\n",
+      "introduced_in": 1
+    }
+  ]
+}

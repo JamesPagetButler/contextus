@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JamesPagetButler/contextus/schema/nt-signal-measurement.schema.json",
+  "title": "NTSignalMeasurement",
+  "description": "The machine-liftable measurement payload for NT_SIGNAL hyperedges. Spec Addendum NT-Signal-Measurement §2. Wire format half of the NT_SIGNAL ↔ Edda Measurement[PhysicalQuantity] co-design.",
+  "type": "object",
+  "required": ["quantity_kind", "value", "uncertainty", "confidence", "unit_system", "registry_version"],
+  "additionalProperties": false,
+  "properties": {
+    "quantity_kind": {
+      "description": "The physical quantity kind. MUST be a registered kind in the registry version named by registry_version. Mutually exclusive with extended_quantity_kind.",
+      "type": "string",
+      "minLength": 1
+    },
+    "extended_quantity_kind": {
+      "description": "Tenant-specific quantity kind outside the registry. Mutually exclusive with quantity_kind. Opaque to cross-tenant significance matching. §5.4.",
+      "type": "string",
+      "minLength": 1
+    },
+    "value": {
+      "description": "The measured value. Numeric — never a string.",
+      "type": "number"
+    },
+    "uncertainty": {
+      "description": "Instrument precision, asymmetric. plus/minus are non-negative magnitudes (σ above / σ below). §2.",
+      "type": "object",
+      "required": ["plus", "minus"],
+      "additionalProperties": false,
+      "properties": {
+        "plus": {
+          "description": "σ above the value. Non-negative.",
+          "type": "number",
+          "minimum": 0
+        },
+        "minus": {
+          "description": "σ below the value. Non-negative.",
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "confidence": {
+      "description": "Extraction fidelity — the lift's self-assessment of how reliably value+uncertainty were extracted from the source. Distinct from uncertainty (instrument precision). §4.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "unit_system": {
+      "description": "Explicit unit system. Never implied. e.g. si, natural, dimensionless.",
+      "type": "string",
+      "minLength": 1
+    },
+    "registry_version": {
+      "description": "The quantity-kind registry version the signal was emitted under. §6.",
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}
