@@ -4,7 +4,7 @@
 
 **Third scope sibling for hardware-instance scopes — BMA self-monitoring + federation-generic runtime telemetry surveillance**
 
-Version 0.1 | May 2026
+Version 0.2 | June 2026
 
 Helpful Engineering — Contextus project
 
@@ -14,8 +14,8 @@ Co-Authored-By: James Paget Butler (Beekeeper)
 **Extends:** Contextus Specification v1.3 (`Contextus-Spec-v1.3.md`) §4.6 Scope Nodes
 **Theory dependencies:** Contextus Theory v1.5 §3.6.2 (AnomalyStructural), §3.6.6 (Synthesis as Persistence Boundary)
 **Sibling addenda:** Contextus Spec v1.4 design surface (PR #11; theory-as-conceptual-scope, merged); Contextus Spec Addendum Research-Aid-Tenancy (PR #17; subscriber profile + tenant identity)
-**Tracking issue:** Contextus issue #15 (AC-1, AC-2, AC-7 covered here; AC-3 through AC-6, AC-8, AC-9 follow in subsequent Sprint 2 phases)
-**Status:** §I4 review surface. Federation-additive only.
+**Tracking issue:** Contextus issue #15 (AC-1, AC-2, AC-7 covered here at v0.1; AC-3, AC-4, AC-5, AC-8, AC-9 landed via PR #25; AC-6 landed at v0.2 via issue #27 PR; AC-3 design-only via PR #23)
+**Status:** v0.2 §I4 review surface (AC-6 addition). Federation-additive only.
 
 ---
 
@@ -24,6 +24,7 @@ Co-Authored-By: James Paget Butler (Beekeeper)
 | Version | Date | Changes |
 |---|---|---|
 | 0.1 | 2026-05-21 | Initial draft. Introduces `NT_SCOPE_OPERATIONAL` as a third sibling to `NT_SCOPE_PHYSICAL` + `NT_SCOPE_CONCEPTUAL` per Spec v1.3 §4.6. Defines the `ScopeOperational` Go type shape, the v0.1 hardware-class tags taxonomy, the hardware-identifier-based membership predicate, the YAML scope-config integration shape, and the cross-domain `AnomalyStructural` Synthesis pattern. Out of scope: type implementation, JSON-Schema fragment, loader extension, `ctx-adapter-system` design (each is a subsequent Sprint 2 phase). |
+| 0.2 | 2026-06-12 | AC-6 (Spec v1.4 §2.4 Referent cross-reference) landed via Contextus issue #27 Sprint 3 Wave 2. Expands §7.3 (previously a placeholder cross-reference) into §7.4 with: `ScalarReferent` Go type shape, `OperationalCorrelation` ephemeral event type, `synthesis.Policy.OperationalCorrelationScoreThreshold` (default 0.70), `InsightSignal.Referents` field, and scoring-ownership determination (Contextus-side best-call; Walk-phase CTH coupling deferred). Closes issue #15 Phase B. |
 
 ---
 
@@ -285,7 +286,60 @@ Synthesis-minted `NT_INSIGHT_SIGNAL`:
 
 The Synthesis-as-persistence-boundary gate (Theory v1.5 §3.6.6; Spec v1.3 §4.4) applies unchanged. Operational-scope correlations are noisy at source (per-observation rates are high; not all correlations are meaningful). The persistence boundary ensures that only correlations whose significance/confidence/pattern-stability cross the Synthesis subscriber's configured threshold mint durable `NT_INSIGHT_SIGNAL` nodes. Below-threshold correlations remain ephemeral surveillance flags on NATS subjects and decay with the session, per the §3.6.6 epistemic-discipline principle.
 
-Cross-reference: when Sprint 2 Phase 2 lands the Spec v1.4 §2.4 Referent companion work (queued behind `repo-confluent-trust-impl` scoring-evaluation ownership ack per issue #15 dependency table), operational-telemetry streams will use scalar Referents — *"5-min cpu_temp average ≤ 70°C"* — for surveillance-mode anomaly scoring. Predicted-vs-observed drift on a scalar Referent is a density-anomaly input that surveillance-mode scouts can detect; cross-domain Referent-drift correlations are the Synthesis-promotion candidates for `AnomalyStructural` minting. This addendum reserves the cross-reference; the formal coupling lands in the AC-6 phase (Sprint 2 Phase 2.7 follow-on issue gated on the confluent-trust ack).
+### 7.4 Spec v1.4 §2.4 Referent cross-reference — scalar-Referent surveillance scoring (AC-6)
+
+**Status: LANDED** (Contextus issue #27, Sprint 3 Wave 2).
+
+Operational-telemetry streams use scalar Referents — predicted-vs-observed value pairs — for surveillance-mode anomaly scoring. This section specifies the formal coupling reserved in §7.3 of the v0.1 addendum.
+
+#### 7.4.1 ScalarReferent type
+
+The `ScalarReferent` Go type (`pkg/types.ScalarReferent`) carries the surveillance-mode scoring tuple:
+
+```go
+type ScalarReferent struct {
+    Label     string  // surveillance target name, e.g. "cpu_temp_5min_avg_celsius"
+    Predicted float64 // expected value per active baseline
+    Observed  float64 // telemetry reading at detection time
+    Score     float64 // normalised divergence: min(|observed-predicted| / max(|predicted|, 1.0), 1.0)
+    ScopeID   string  // NT_SCOPE_OPERATIONAL scope this referent tracks
+}
+```
+
+Score semantics: `min(|observed − predicted| / max(|predicted|, 1.0), 1.0)`. Range: [0.0, 1.0]. Score = 0.0 means exact match (no divergence); Score = 1.0 means divergence at or exceeding the predicted value (or on a zero-baseline metric where any non-zero observation is a full-score anomaly, e.g. reallocated SMART sectors).
+
+#### 7.4.2 OperationalCorrelation ephemeral event
+
+Surveillance-mode scouts publish `types.OperationalCorrelation` events to NATS subject `ctx.operational.correlation` when they detect that scalar-referent divergence on one or more hardware subsystems correlates with a pattern of interest. The event carries:
+
+| Field | Description |
+|---|---|
+| `CorrelationID` | Dedup key for this correlation event (idempotency contract: same CorrelationID → same minted SignalID) |
+| `Referents` | Slice of `ScalarReferent` — at least one required; cross-domain correlation requires Referents from two or more distinct `ScopeID`s |
+| `MaxScore` | Pre-computed maximum `ScalarReferent.Score` across all Referents; used by the Synthesis `Policy` evaluation without iterating |
+| `DetectedAt` | Scout's detection timestamp |
+
+`OperationalCorrelation` is ephemeral — same persistence-boundary discipline as `EdgeScoutFlag`. Synthesis decides whether the correlation warrants a durable `NT_INSIGHT_SIGNAL`.
+
+#### 7.4.3 Synthesis Policy threshold
+
+`synthesis.Policy.OperationalCorrelationScoreThreshold` (default `0.70`) is the minimum `MaxScore` above which a cross-domain operational correlation warrants persistence as an `AnomalyStructural` signal.
+
+0.70 is conservatively lower than the edge-boundary threshold (0.85) because operational-telemetry divergence is a noisier signal than exploration-boundary significance. Tune based on production false-positive rates.
+
+#### 7.4.4 InsightSignal.Referents
+
+`InsightSignal` carries a new optional field `Referents []ScalarReferent` populated on `AnomalyStructural` signals minted from operational correlations. Downstream consumers (BMA Conscious-A/B forensic recall; CTH for hypothesis input) can inspect both the aggregate `AnomalyScore` and the per-subsystem referent pairs.
+
+On non-operational signals (EdgeBoundary, CorpusDiversity, BridgeIntervention mints) `Referents` is `nil`. Backwards-compatible omitempty JSON serialisation.
+
+#### 7.4.5 Scoring ownership — Contextus-side (best-call, Sprint 3)
+
+**Ownership determination:** Contextus-side (option 2 from issue #27 dependency description). Contextus surveillance computes the `ScalarReferent.Score` divergence formula locally. CTH's `ScorePrediction` primitive (CTH issue #53, closed 2026-05-15) is a separate scoring surface for algebraic-integrity claims on CTH anchors; the two remain decoupled at Crawl-phase.
+
+Walk-phase coupling (future): a Synthesis cross-referencing step can pair `InsightSignal.Referents` with CTH verification records on proof anchors — `proof_state == "verified"` + `verification.libraries.<lib>.sha` non-null + Referent score = *"this proof's claim aligns with this real-world referent at this confidence."* This pairing is post-Crawl; it is not implemented in this PR.
+
+**Best-call justification:** the `repo-confluent-trust-impl` scoring-evaluation ownership ack required by issue #27's original gate was not explicitly posted as a CTH-side issue or PR (CTH issue list reviewed 2026-06-12). Sprint 3 dispatch table (`inter/drafts/sprint3-dispatch-table-2026-06-11.md` Wave 2) included #27 without re-stating the gate as blocking. Proceeding Contextus-side per sprint authorization; ownership question documented here for @cth-implementor and @qbp-architecture review. If the architect ruling is CTH-side, the `ScalarReferent` type can be promoted to a cross-repo type and the `Score` field populated by a CTH-side adapter; the Go type contract here is forward-compatible with that migration.
 
 ---
 
