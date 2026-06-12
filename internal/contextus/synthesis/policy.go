@@ -103,6 +103,12 @@ func (p Policy) EvaluateBridgeIntervention(iv types.BridgeIntervention) types.An
 // must be in [0.0, 1.0]. A correlation with no referents is always skipped
 // (defensive; the scout should not emit empty-referent correlations).
 //
+// Per §7.4.2 of the NT_SCOPE_OPERATIONAL addendum and the OperationalCorrelation
+// type doc, a cross-domain claim requires referents from at least 2 distinct
+// ScopeIDs. A correlation whose referents all share the same ScopeID describes
+// a single-domain anomaly and does not warrant an AnomalyStructural mint — it
+// stays ephemeral so a higher-specificity signal kind (future work) can handle it.
+//
 // AnomalyStructural reflects that a cross-domain hardware↔cognitive or
 // hardware↔algebraic correlation is a statement about the structure of the
 // running system (Theory v1.5 §3.6.2 + NT_SCOPE_OPERATIONAL spec §7).
@@ -110,8 +116,23 @@ func (p Policy) EvaluateOperationalCorrelation(c types.OperationalCorrelation) t
 	if len(c.Referents) == 0 {
 		return ""
 	}
+	if distinctScopeIDs(c.Referents) < 2 {
+		return ""
+	}
 	if c.MaxScore >= p.OperationalCorrelationScoreThreshold {
 		return types.AnomalyStructural
 	}
 	return ""
+}
+
+// distinctScopeIDs counts the number of unique ScopeID values across the
+// given referent slice. Used to enforce the cross-domain requirement: an
+// OperationalCorrelation must span ≥2 distinct ScopeIDs to qualify as a
+// cross-domain claim (§7.4.2).
+func distinctScopeIDs(refs []types.ScalarReferent) int {
+	seen := make(map[string]struct{}, len(refs))
+	for _, r := range refs {
+		seen[r.ScopeID] = struct{}{}
+	}
+	return len(seen)
 }

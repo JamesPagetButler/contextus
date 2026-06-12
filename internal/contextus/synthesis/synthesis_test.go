@@ -223,7 +223,9 @@ func TestPolicy_DefaultThresholds(t *testing.T) {
 
 // TestOperationalCorrelation_BelowThreshold_Skipped verifies that an
 // OperationalCorrelation with MaxScore below the policy threshold stays
-// ephemeral (no mint, promoted=false).
+// ephemeral (no mint, promoted=false). Uses two distinct ScopeIDs so the
+// ≥2-ScopeID cross-domain guard passes and the score gate is the deciding
+// condition.
 //
 // AC-6: cross-domain correlation test — below-threshold case.
 func TestOperationalCorrelation_BelowThreshold_Skipped(t *testing.T) {
@@ -237,6 +239,13 @@ func TestOperationalCorrelation_BelowThreshold_Skipped(t *testing.T) {
 				Observed:  67.0,
 				Score:     0.031, // |67-65|/65 ≈ 0.031 — well below 0.70
 				ScopeID:   "contextus:scope:operational:host-bma-prime-cpu",
+			},
+			{
+				Label:     "disk_smart_reallocated_sectors",
+				Predicted: 0.0,
+				Observed:  0.0,
+				Score:     0.0, // no reallocated sectors — also below 0.70
+				ScopeID:   "contextus:scope:operational:host-bma-prime-disk",
 			},
 		},
 		MaxScore: 0.031,
@@ -386,24 +395,83 @@ func TestOperationalCorrelation_MintsStructuralWithReferent(t *testing.T) {
 	}
 }
 
-// TestOperationalCorrelation_DeterministicID verifies the idempotency contract:
-// two evaluations of the same OperationalCorrelation (same CorrelationID)
-// produce the same SignalID. Synthesis must treat the SignalID as the dedup key.
+// TestOperationalCorrelation_DeterministicID verifies the §7.4.2 idempotency
+// contract: two evaluations of the same OperationalCorrelation (same
+// CorrelationID) produce the same SignalID. Synthesis must treat the SignalID
+// as the dedup key.
 //
-// AC-6: deterministic SignalID for operational correlations.
+// The correlation must be above-threshold AND span ≥2 distinct ScopeIDs so
+// that deterministicAddr is actually invoked and both ids are real minted
+// addresses — not the zero Addr from a short-circuit skip.
+//
+// AC-6: deterministic SignalID for operational correlations (C1 fix: was
+// MaxScore 0.277 below the 0.70 threshold — test passed vacuously on zero
+// Addr equality without ever exercising deterministicAddr).
 func TestOperationalCorrelation_DeterministicID(t *testing.T) {
 	a, _ := newTestAgent()
+	// Pattern-A correlation (thermal stress ↔ algebraic-integrity drift):
+	// MaxScore 1.0 > 0.70 threshold; two distinct ScopeIDs → cross-domain guard passes.
 	corr := types.OperationalCorrelation{
 		CorrelationID: "corr-bma-prime-determinism-test",
 		Referents: []types.ScalarReferent{
-			{Label: "cpu_temp", Predicted: 65.0, Observed: 83.0, Score: 0.277,
+			{Label: "cpu_temp", Predicted: 65.0, Observed: 83.0, Score: 0.26,
 				ScopeID: "contextus:scope:operational:host-bma-prime-cpu"},
+			{Label: "disk_smart_reallocated_sectors", Predicted: 0.0, Observed: 3.0, Score: 1.0,
+				ScopeID: "contextus:scope:operational:host-bma-prime-disk"},
 		},
-		MaxScore: 0.277,
+		MaxScore: 1.0,
 	}
-	id1, _, _ := a.HandleOperationalCorrelation(context.Background(), corr)
-	id2, _, _ := a.HandleOperationalCorrelation(context.Background(), corr)
+	id1, ok1, err1 := a.HandleOperationalCorrelation(context.Background(), corr)
+	if err1 != nil {
+		t.Fatalf("first evaluation: unexpected error: %v", err1)
+	}
+	if !ok1 {
+		t.Fatal("first evaluation: expected promoted=true (above-threshold, cross-domain); got false — deterministicAddr was never exercised")
+	}
+	id2, ok2, err2 := a.HandleOperationalCorrelation(context.Background(), corr)
+	if err2 != nil {
+		t.Fatalf("second evaluation: unexpected error: %v", err2)
+	}
+	if !ok2 {
+		t.Fatal("second evaluation: expected promoted=true; got false")
+	}
 	if id1 != id2 {
-		t.Errorf("expected deterministic SignalID; got %x vs %x", id1, id2)
+		t.Errorf("expected deterministic SignalID across evaluations; got %x vs %x", id1, id2)
+	}
+}
+
+// TestOperationalCorrelation_SingleScopeID_Skipped verifies that a correlation
+// whose referents all share the same ScopeID is rejected as a single-domain
+// observation — it does not qualify as a cross-domain AnomalyStructural claim.
+//
+// §7.4.2 + OperationalCorrelation type doc: cross-domain correlation requires
+// referents from ≥2 distinct ScopeIDs. Enforcement is in
+// EvaluateOperationalCorrelation (G1 fix).
+//
+// AC-6: ≥2-distinct-ScopeID guard.
+func TestOperationalCorrelation_SingleScopeID_Skipped(t *testing.T) {
+	a, p := newTestAgent()
+	// Both referents report from the same ScopeID (single hardware domain).
+	// MaxScore is well above the 0.70 score threshold to confirm that the
+	// ScopeID guard fires before the score gate.
+	corr := types.OperationalCorrelation{
+		CorrelationID: "corr-single-scope-rejection-test",
+		Referents: []types.ScalarReferent{
+			{Label: "cpu_temp_5min_avg", Predicted: 65.0, Observed: 83.0, Score: 0.26,
+				ScopeID: "contextus:scope:operational:host-bma-prime-cpu"},
+			{Label: "cpu_temp_10min_avg", Predicted: 66.0, Observed: 84.0, Score: 0.27,
+				ScopeID: "contextus:scope:operational:host-bma-prime-cpu"}, // same ScopeID
+		},
+		MaxScore: 0.90,
+	}
+	_, ok, err := a.HandleOperationalCorrelation(context.Background(), corr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ok {
+		t.Error("expected promoted=false for single-ScopeID correlation (not cross-domain); got true")
+	}
+	if p.Calls != 0 {
+		t.Errorf("expected MintSignal not called for single-ScopeID correlation; got %d calls", p.Calls)
 	}
 }
