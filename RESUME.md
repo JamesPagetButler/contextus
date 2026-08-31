@@ -24,6 +24,7 @@
 
 ## Open balls / blockers
 
+- **Craft/cockpit design (with qbp-architecture)** — ratified: craft = viewer over Contextus; state federates per-domain; ScalarReferent scoring stays Contextus-side (architect ruling). ACTIVE next-steps: co-author the **attention-scalar seam contract** (emit side mine); **Squam Lake walk-through HELD for beekeeper** to hand over a concrete problem. Design-only, parallel-lane. See memory `craft-over-contextus-architecture`.
 - **#15** NT_SCOPE_OPERATIONAL umbrella — most ACs merged (#25 AC-2/4/5/8/9, #23 AC-3, #33 AC-6/#27); candidate for a **verify-to-close** pass.
 - **#35** Walk-phase CTH-side scoring adapter (`ScalarReferent.Score` via `ctx.operational.correlation`) — **Walk-phase**, not Crawl.
 - **#24** scaffold-type enum sync — **blocked on** bma-implementor publishing canonical v0.1 taxonomy.
@@ -40,6 +41,7 @@
 
 ## Recent state-changes (dated log, newest first)
 
+- `2026-08-30` — Entered the beekeeper-directed craft/cockpit design thread with qbp-architecture: delivered the verified Contextus model + seam + generality read; architect ratified, ruled scoring stays Contextus-side. Seam-contract co-authoring active; Squam walk-through held for beekeeper. Captured in memory `craft-over-contextus-architecture`.
 - `2026-08-29` — Relaunch after Aug-24 host crash: re-registered, re-subscribed, Monitor re-armed; verified desk clean (nothing lost). Created this RESUME.md per deming's beekeeper-directed requirement (seq=813).
 - `2026-08-20` — Re-armed post-morning-crash; answered deming poll (seq=742); confirmed off the Crawl-close checklist.
 
