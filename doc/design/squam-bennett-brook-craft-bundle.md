@@ -142,4 +142,25 @@ Remediation options (dig-and-haul, thermal desorption, biochar, Cucurbita phytor
 
 ---
 
-*End — worked bundle for craft↔Contextus completeness stress. Design-only; reconcile against qbp-architecture's craft-side render/navigate walk-through. Findings A/B are candidate scalar-contract amendments to fold into the seam-contract v0 → v0.1.*
+---
+
+## 4. Seam-contract v0.1 — ratified delta (post-reconciliation with qbp-architecture)
+
+The Squam stress-run promoted three findings + surfaced a fourth. All ratified into the attention-scalar **v0.1**:
+
+- **Finding A — temporal/kinetics (dual, like salience):**
+  - referent-level (foveal detail): `ScalarReferent += {rate, projected_peak_time, projection_confidence}` — trajectory not just point-value; `projection_confidence` distinct from present-value confidence so the cone renders a fuzzy-edged *forecast* glyph vs a hard-edged *measurement* glyph. Stays **inside the referent = monitoring, not evaluation.**
+  - scalar-level (peripheral glyph character): derived `lead_time`/`kinetics` {slow-high-consequence ↔ acute-now} summarised from the referent trajectories, so the peripheral register need not re-read every trajectory.
+- **Finding D — the bitemporal catch (`event_time`, REQUIRED add):** the three-clock observation is the **bitemporal distinction** — **event-time = valid-time** (when the fact is true in the world: barn burned ~1968, DDT applied 1940s, die-off 2004) vs **mint/capture = transaction-time** (when Contextus recorded it: ≈2004). Bitemporal DBs track both precisely *because* they diverge for reconstructed history and collapse for live streams — exactly this case. The craft-derived edge-lag (you emit nodes, craft diffs times along walked edges) is **only correct on valid-time**; diffing transaction-time yields ~0 yr, not 40, and the cascade's temporal signature vanishes. Fix: explicit domain **`event_time`** (valid-time instant, populated from the datum — *cannot* be derived from mint/capture for forensic data). **Monitoring-pure, no purity conflict:** "when did the barn burn" is an observational fact, not a verdict — Contextus's lane whether referent- or scalar-level. **Dual placement:** precise `event_time` on the referent/observation (foveal audit instant) + **raw** `event_time` hoisted to scalar-level (peripheral — so the cone diffs event-times along the walked edge without a round-trip). Note it is a **raw hoisted instant (like `locus`)**, NOT a derived summary (like `lead_time`) — the cone needs the actual instant to diff. `locale`/`grain` remain the scope *envelope* (1945→2050), never the instant.
+  - **Render-side guarantee (architect-owned):** the craft is **clock-explicit** — *causal-cascade view* diffs `event_time` (valid-time) only; *audit/provenance view* (A26 §4c) diffs mint/capture (transaction-time); it NEVER silently diffs across clocks. Two clocks, two labeled views — the bitemporal trap cannot reappear at render time.
+- **Finding B — multi-manifold (ratified):** `anchor.scope_id → scope_ids: [{scope_id, kind}]` (+ `method` if cheap). One node holds simultaneous membership across manifolds; the craft offers each available `reframe` from the node's `scope_ids`, rendered by target-manifold **kind** (physical → spatial canopy; `ScopeConceptual` → constraint-lattice). Node-level twin of the cross-repo sha-drift discipline.
+- **Finding C — attribution depth (no new field):** multi-hop attribution chain reached via `signal_id → InsightSignal.Evidence[] + ClaimHistory[]` on foveal detail-pull; renders as the audit/provenance view.
+
+**Validated by this case:** (1) a `ScopeConceptual` (`brownfield-eligibility`, `cth-derivation`) co-located in the same focus region as the physical watershed = the two-domain craft in miniature on a real case — physical state Contextus-sourced, regulatory scoped-but-not-ruled (§7.4 coupling; generality held). (2) The 1945→2050 scope envelope (past-cause → future-projection) is the right focus-region span.
+
+**Seam held throughout:** remediation options = action-space (craft layer-3); Brownfield-vs-Superfund = evaluation (judge/legal-authority lane, read-only at bridge); Contextus scopes the manifolds, never rules on them.
+
+**Seam-contract v0.1 — PINNED (both sides, 2026-09-01):**
+`ScalarReferent += {rate, projected_peak_time, projection_confidence}` · scalar `+= lead_time` (derived, peripheral) + `event_time` (raw valid-time instant, hoisted like `locus`; dual; monitoring-pure) · `anchor.scope_id → scope_ids: [{scope_id, kind}]` · Finding C unchanged · seam held (monitor / evaluate / bridge).
+
+*End — worked bundle + PINNED v0.1 for the craft↔Contextus seam contract. Design-only; the v0.1 field additions are candidate spec amendments that ride the normal §I4/PR path when implementation unblocks (push beekeeper-gated). The forensic case earned three fields the abstract spec would never have surfaced — the vindication of running a real cascade instead of live telemetry.*
