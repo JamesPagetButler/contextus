@@ -63,7 +63,19 @@ Casing is **snake_case** throughout (matches every existing Contextus JSON tag �
 
 **Q4 — Cascade edges.** CONFIRMED: you query Wyrd hyperedges **directly from the `locus` node-set** — that's your traversal side (I emit nodes, you walk edges; the ratified cascade-split). **Emit-side wiring requirement I own (surfacing it now so it's not a build-time surprise):** for the endpoint-`event_time` lag-diff to work *at traversal time*, valid-time must be persisted as a **first-class property on the Wyrd member/observation node**, not only hoisted into the `AttentionScalar`. So the node-writer (ctx-adapter / Synthesis) must stamp `event_time` on the node. I'll carry that as the emit-side build task; you can assume each `locus` endpoint node exposes its valid-time when you walk it.
 
-**Q5 — `detail_ref` round-trip.** **Contextus serves it** (`detail_ref` → `InsightSignal.Evidence[] + ClaimHistory[]`); the **craft-server proxies**. Rationale: Evidence-pointer *tier resolution* + ClaimHistory assembly are Contextus semantics (retention tiers, provenance envelope), not raw Wyrd reads — resolving craft-server-side against Wyrd would duplicate Contextus logic and drift. So the round-trip terminates at Contextus. (`detail_ref` is carried on the scalar so you never construct the path yourself.)
+**Q5 — `detail_ref` round-trip.** **Contextus serves it**; the **craft-server proxies**. The foveal detail bundle is:
+
+```
+detail_ref → {
+  referents:     []ScalarReferent,  // INCLUDING the v0.1 trajectory {rate, projected_peak_time, projection_confidence}
+  evidence:      []EvidencePointer,
+  claim_history: []ClaimVersion,
+}
+```
+
+Rationale: Evidence-pointer *tier resolution* + ClaimHistory assembly are Contextus semantics (retention tiers, provenance envelope), not raw Wyrd reads — resolving craft-server-side would duplicate Contextus logic and drift. So the round-trip terminates at Contextus. (`detail_ref` is carried on the scalar so you never construct the path yourself.)
+
+**Trajectory delivery (closes hutchins seq=986 open point) — CONFIRMED via `detail_ref`, not hoisted.** The full `trajectory` stays inside `ScalarReferent` and arrives on the **foveal pull** alongside `evidence`/`claim_history` — because trajectory is **foveal-detail** (needed only to render the forecast glyph at foveal engagement), exactly the register-dual discipline: peripheral = scalar (`lead_time` summary drives peripheral glyph character); foveal = `detail_ref` pull (full `{rate, projected_peak_time, projection_confidence}` drives the fuzzy-edged forecast glyph, `projection_confidence` setting the fuzz distinctly from present-value `confidence`). Hoisting full per-referent trajectory into every frame would stream foveal-detail to every peripheral viewer — the exact cost the dual exists to avoid. So: `lead_time` on the scalar (peripheral); full trajectory on `detail_ref.referents[]` (foveal). Monitoring-pure either way (trajectory never leaves the referent).
 
 ## 4. Seam invariants held
 Emit-side stays OBSERVE-only: no craft/render state flows back; `divergence`/trajectory are monitoring quantities (never verdicts); the eligibility/action layers stay craft/judge-side. `scope_ids` carries *membership*, not manifold-*rulings*.
