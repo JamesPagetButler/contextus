@@ -38,7 +38,8 @@ type AttentionScalar struct {
 
 type ScopeRef struct {
     ScopeID string `json:"scope_id"`
-    Kind    string `json:"kind"` // DOMAIN-KIND (render selector), NOT raw scope-kind: physical|theory|cognition|code|operational. Derived emit-side — see §2.1.
+    Kind    string `json:"kind"`             // DOMAIN-KIND (render selector), NOT raw scope-kind: physical|theory|cognition|code|operational. Derived emit-side — see §2.1.
+    Parent  string `json:"parent,omitempty"` // hierarchical grain: the enclosing scope id (point ⊂ sub-watershed). Emit-side populates from ScopePhysical.ParentScopeID; empty when top-level. (Absorbed from craft #96 render — hutchins seq=1013.)
 }
 
 // ScalarReferent v0.1 additions (trajectory — stays inside the referent = monitoring, not evaluation):
@@ -82,10 +83,12 @@ Fallback: a `ScopeConceptual` with no domain-specific predicate is emitted with 
 ```
 detail_ref → {
   referents:     []ScalarReferent,  // INCLUDING the v0.1 trajectory {rate, projected_peak_time, projection_confidence}
-  evidence:      []EvidencePointer,
-  claim_history: []ClaimVersion,
+  evidence:      []EvidencePointer, // wire shape {ref, kind, note?} — see below
+  claim_history: []ClaimVersion,    // {version, claim, reason, source, timestamp} — matches pkg/types.ClaimVersion 1:1
 }
 ```
+
+**`EvidencePointer` wire shape (pinned — closes the render-side gap, craft #96):** the wire element is `{ref string, kind string, note string (omitempty)}`, NOT Contextus's internal tiered `EvidencePointer` (which carries `Locator`/`LocatorKind` + tier-conditional fields per Spec §5.4). **Emit-side maps down at the `detail_ref` boundary:** `ref` = the resolved `Locator`, `kind` = `LocatorKind` normalised to `observation|citation|derivation`, `note` = the tier-conditional note when the retention tier carries one (else omitted). Tier resolution stays Contextus-side (the craft renders what it's handed); the craft never sees raw tier internals.
 
 Rationale: Evidence-pointer *tier resolution* + ClaimHistory assembly are Contextus semantics (retention tiers, provenance envelope), not raw Wyrd reads — resolving craft-server-side would duplicate Contextus logic and drift. So the round-trip terminates at Contextus. (`detail_ref` is carried on the scalar so you never construct the path yourself.)
 
