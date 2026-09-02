@@ -38,7 +38,7 @@ type AttentionScalar struct {
 
 type ScopeRef struct {
     ScopeID string `json:"scope_id"`
-    Kind    string `json:"kind"` // "physical" | "conceptual" | "operational" — craft renders each manifold-exit by kind
+    Kind    string `json:"kind"` // DOMAIN-KIND (render selector), NOT raw scope-kind: physical|theory|cognition|code|operational. Derived emit-side — see §2.1.
 }
 
 // ScalarReferent v0.1 additions (trajectory — stays inside the referent = monitoring, not evaluation):
@@ -48,6 +48,20 @@ type ScopeRef struct {
 ```
 
 Casing is **snake_case** throughout (matches every existing Contextus JSON tag — `scope_id`, `provenance_tag`, `signal_id`).
+
+### 2.1 `kind` = domain_kind — emit-side derivation (architect-ruled, seq 1005)
+
+`ScopeRef.Kind` carries the **domain-kind** (the render's canopy selector), **not** the raw Go scope-kind. Reason: **theory and code are BOTH `ScopeConceptual`**, so raw scope-kind can't distinguish a proof-lattice (CTH theory) from a type-lattice (Edda code) — the render must pick the canopy off domain-kind. Per `inter/craft-domain-kinds-and-edda-seam.md`, domain-kind is keyed on *state-source*, and the derivation is **emit-side** (Contextus knows the scope type + membership predicate):
+
+| Contextus scope | membership predicate / marker | `domain_kind` | state source |
+|---|---|---|---|
+| `ScopePhysical` | (geometry) | `physical` | Contextus pipeline |
+| `ScopeOperational` | `hardware-identifier` | `operational` | Contextus pipeline (host telemetry) |
+| `ScopeConceptual` | `cth-derivation` (`ontology_uri: cth://anchor/…`) | `theory` | CTH (bridge) |
+| `ScopeConceptual` | edda-module predicate | `code` | Edda compiler (bridge) |
+| `ScopeConceptual` | BMA-instance predicate | `cognition` | BMA (bridge) |
+
+Fallback: a `ScopeConceptual` with no domain-specific predicate is emitted with an explicit `kind` from its config (no silent default — an un-kinded manifold-exit would be a render ambiguity). Naming: `scalar.DomainKind{Physical,Theory,Cognition,Code,Operational}` constants (mirrors hutchins's render-side constants). **For Squam:** the `brownfield-eligibility` scope (`cth-derivation`) emits `kind: "theory"` → the `barn-soil-ddt` node's `scope_ids` = `[{…watershed, physical}, {…brownfield, theory}]`, so its `reframe` exits are `{physical, theory}` — two domain-kinds from day one.
 
 ## 3. Answers to the §7 render-side asks
 
