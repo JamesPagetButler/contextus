@@ -64,6 +64,15 @@ Casing is **snake_case** throughout (matches every existing Contextus JSON tag �
 
 Fallback: a `ScopeConceptual` with no domain-specific predicate is emitted with an explicit `kind` from its config (no silent default — an un-kinded manifold-exit would be a render ambiguity). Naming: `scalar.DomainKind{Physical,Theory,Cognition,Code,Operational}` constants (mirrors hutchins's render-side constants). **For Squam:** the `brownfield-eligibility` scope (`cth-derivation`) emits `kind: "theory"` → the `barn-soil-ddt` node's `scope_ids` = `[{…watershed, physical}, {…brownfield, theory}]`, so its `reframe` exits are `{physical, theory}` — two domain-kinds from day one.
 
+### 2.2 Null vs empty — the two distinct "nothing"s (wire convention)
+
+The contract uses **two different encodings for "nothing," and they are not interchangeable** — the render depends on the distinction (verified against the craft render, seq 1409/1413):
+
+- **Absent *scalar* → explicit `null`** (a pointer field, never `omitempty`): `divergence`, `event_time`, `lead_time`. `null` is a *meaningful* value — "no monitor referent" / "no valid-time datum, cannot place on the causal-lag axis" / "no trajectory" — semantically distinct from a zero (`0.0` divergence ≠ no divergence; epoch ≠ no event-time). So the key is always present with an explicit `null`.
+- **Empty *collection* → `[]`** (never `null`): the `detail_ref` collections (`referents`, `evidence`, `claim_history`) and the cascade `edges` list. An empty collection is the natural "none" and marshals as `[]` so the render reads `.length` without a null-guard. Emit MUST NOT send `null` for these.
+
+Rule of thumb: **a missing value is `null`; a missing set is `[]`.** (The craft render already implements this — `[]`-not-`null` on the detail collections + cascade edges; this documents it emit-side so the live `detail_ref`/frame endpoints match the stub exactly.)
+
 ## 3. Answers to the §7 render-side asks
 
 **Q1 — Wire envelope.**
