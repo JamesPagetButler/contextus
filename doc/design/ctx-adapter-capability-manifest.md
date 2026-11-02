@@ -42,7 +42,7 @@ A per-host **capability manifest**, emitted by the adapter, declaring every sour
 | `source` | The `ctx-adapter-system` source: `stress_log` \| `lm_sensors` \| `smartctl` \| `proc_meminfo` \| `gpu`. |
 | `hardware_class` | The v0.1 tag it feeds (`hardware.cpu/disk/gpu/memory/network`), or empty for host-level (`stress_log`). |
 | `expected` | `bool` — is this source expected present on `host_class`? (The disambiguator.) |
-| `state` | `present` \| `absent_by_design` \| `failed` (§3). |
+| `state` | `present` \| `absent_by_design` \| `failed` \| `unexpected` (§3). |
 | `detail` | Optional free-form (e.g. `"rocm-smi: no device"`); omitted when `present`. |
 
 ## 3. State semantics — the disambiguation
@@ -59,7 +59,7 @@ A per-host **capability manifest**, emitted by the adapter, declaring every sour
 ## 4. Emission
 
 - **At adapter startup:** the full manifest (every known source with its initial state). This replaces the Crawl "one INFO log line per missing source" (`ctx-adapter-system` §10 Q1) with a machine-readable declaration.
-- **On capability change:** a fresh manifest (`reason: capability_change`) when any source transitions state — e.g. GPU `present → failed` (driver crash) or `absent_by_design → present` (hot-plug). Not per-observation; only on a state edge.
+- **On capability change:** a fresh manifest (`reason: capability_change`) when any source transitions state — e.g. GPU `present → failed` (driver crash) or `absent_by_design → unexpected` (a hot-plugged source the `host_class` table didn't expect; §3). Not per-observation; only on a state edge.
 - Scoped to the host's **host-level umbrella `ScopeOperational`** (`HardwareClass=""`) via `HE_SCOPE_MEMBERSHIP`, so a consumer resolving a host's operational scope also finds its manifest.
 
 Distinct from the **heartbeat** (`ctx-adapter-system` §10 Q2): heartbeat = *liveness* ("adapter alive"); manifest = *capability* ("which sources, in which state"). Both are adapter-level, host-umbrella-scoped; they compose (a missed heartbeat = adapter down → the whole manifest is stale; a `failed` entry = adapter up, one source down).
