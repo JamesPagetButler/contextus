@@ -52,8 +52,9 @@ A per-host **capability manifest**, emitted by the adapter, declaring every sour
 | true | yes | `present` | Source read OK; observations flowing. |
 | false | no | `absent_by_design` | Host class has no such source (non-GPU host). **Not an error.** |
 | true | no | `failed` | Source *should* be there and the read failed. **Degraded telemetry — actionable.** |
+| false | yes | `unexpected` | Source emits despite not being in the `host_class` expected-source table (hot-plug, or an entry that's gone stale). **Not a host anomaly** — the per-`host_class` expected-table is out of date (tuning-table drift); the host itself is fine. |
 
-`absent_by_design` vs `failed` is exactly `expected`: the field #28 asks for. `absent_by_design` is never sentinel-eligible; `failed` **is** a surveillance signal (a `host_class`-expected source going dark is itself an anomaly a consumer should raise).
+`absent_by_design` vs `failed` is exactly `expected`: the field #28 asks for. `absent_by_design` is never sentinel-eligible; `failed` **is** a surveillance signal (a `host_class`-expected source going dark is itself an anomaly a consumer should raise). `unexpected` is diagnostic, not sentinel-eligible either — it flags the tuning table, not the host; the fix is updating `host_class`'s expected-source table, never treating the host as degraded.
 
 ## 4. Emission
 
@@ -83,6 +84,7 @@ This closes the federation-level false read where silence was ambiguous. The `ct
 - [x] **Manifest schema designed** — §2 (node + payload + `sources[]`) and §3 (states).
 - [x] **Adapter emits a manifest node at startup** — §4 (`NT_ADAPTER_CAPABILITY_MANIFEST`, startup + capability-change); *implementation* Walk-α / BMA-implementor, per the issue's own "no Crawl action required" scope.
 - [x] **Cross-host correlation references the manifest, not signal-inference** — §5, plus the pointer to fold into `ctx-adapter-system.md` §5.
+- [ ] **Walk-α executable-spec coverage (inter#207 lock-scope):** the Walk-α implementation's executable spec includes an **end-to-end consumer-interface test** proving `absent_by_design` GPU silence raises no anomaly and `failed` does. Implementation-side (BMA-implementor); tracked here, not built here.
 - [ ] **§I4 reader-list:** @wyrd-implementor (node type / substrate) · @qbp-architecture (federation coherence). ← review gate, on the PR.
 
 ## 8. References
