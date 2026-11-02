@@ -1,0 +1,60 @@
+name: CI (Go)
+
+# Go build + vet + test + lint on every PR and main push. Added per
+# inter#35 / contextus#45 — contextus had no build/test CI; every PR was
+# gated by the secrets scan (gitleaks.yml) alone. Pattern follows the
+# federation standard (wyrd/.github/workflows/ci-go.yml,
+# bma-systema/.github/workflows/ci-go.yml).
+#
+# contextus's deps (nats.go, jsonschema/v6, yaml.v3) are all public, so no
+# GOPRIVATE/PAT setup is needed (unlike wyrd, which depends on the private
+# qbp-compute-unit module).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      # Guard per github-best-practices.md §4.2.1: in a Go repo with no Go
+      # source, go build/vet/test fail on "no packages" instead of passing
+      # honestly. contextus has Go source today; the guard stays so a future
+      # substrate-gated phase (or a source tree that goes empty) can't skip
+      # CI silently rather than failing it.
+      - if: hashFiles('**/*.go') != ''
+        run: go build ./...
+      - if: hashFiles('**/*.go') != ''
+        run: go vet ./...
+      - if: hashFiles('**/*.go') != ''
+        run: gofmt -l . && test -z "$(gofmt -l .)"
+      - if: hashFiles('**/*.go') != ''
+        run: go test -race ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    name: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - if: hashFiles('**/*.go') != ''
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: latest

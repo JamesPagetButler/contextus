@@ -15,6 +15,10 @@ permissions:
   contents: read
   pull-requests: write   # required for gitleaks-action to post PR comments on detection
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   scan:
     name: Detect committed secrets
