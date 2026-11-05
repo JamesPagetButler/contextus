@@ -180,6 +180,10 @@ The adapter MUST stay within an ingest-rate envelope that the BMA host can susta
 
 Exceeding these is a sign the cadence defaults are too aggressive for the host; per §5.2 the implementor adjusts.
 
+### 5.4 Capability is read from the manifest, not inferred from cadence
+
+A tuned-down cadence (§5.1/§5.2) and an actually-missing source look identical from the outside: both mean fewer or no observations for a window. Per the Walk-α capability-manifest addendum (`doc/design/ctx-adapter-capability-manifest.md` §5): **capability is read from the manifest, never inferred from signal presence.** Consumers disambiguate "no `gpu_temp` for 5 min" via the host's capability manifest (`absent_by_design` / `failed` / `present`-but-silent), not by reasoning about this section's cadence table.
+
 ---
 
 ## 6. Sentinel-class observations

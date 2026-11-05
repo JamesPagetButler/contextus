@@ -42,7 +42,7 @@ A per-host **capability manifest**, emitted by the adapter, declaring every sour
 | `source` | The `ctx-adapter-system` source: `stress_log` \| `lm_sensors` \| `smartctl` \| `proc_meminfo` \| `gpu`. |
 | `hardware_class` | The v0.1 tag it feeds (`hardware.cpu/disk/gpu/memory/network`), or empty for host-level (`stress_log`). |
 | `expected` | `bool` — is this source expected present on `host_class`? (The disambiguator.) |
-| `state` | `present` \| `absent_by_design` \| `failed` (§3). |
+| `state` | `present` \| `absent_by_design` \| `failed` \| `unexpected` (§3). |
 | `detail` | Optional free-form (e.g. `"rocm-smi: no device"`); omitted when `present`. |
 
 ## 3. State semantics — the disambiguation
@@ -52,13 +52,14 @@ A per-host **capability manifest**, emitted by the adapter, declaring every sour
 | true | yes | `present` | Source read OK; observations flowing. |
 | false | no | `absent_by_design` | Host class has no such source (non-GPU host). **Not an error.** |
 | true | no | `failed` | Source *should* be there and the read failed. **Degraded telemetry — actionable.** |
+| false | yes | `unexpected` | Source emits despite not being in the `host_class` expected-source table (hot-plug, or an entry that's gone stale). **Not a host anomaly** — the per-`host_class` expected-table is out of date (tuning-table drift); the host itself is fine. |
 
-`absent_by_design` vs `failed` is exactly `expected`: the field #28 asks for. `absent_by_design` is never sentinel-eligible; `failed` **is** a surveillance signal (a `host_class`-expected source going dark is itself an anomaly a consumer should raise).
+`absent_by_design` vs `failed` is exactly `expected`: the field #28 asks for. `absent_by_design` is never sentinel-eligible; `failed` **is** a surveillance signal (a `host_class`-expected source going dark is itself an anomaly a consumer should raise). `unexpected` is diagnostic, not sentinel-eligible either — it flags the tuning table, not the host; the fix is updating `host_class`'s expected-source table, never treating the host as degraded.
 
 ## 4. Emission
 
 - **At adapter startup:** the full manifest (every known source with its initial state). This replaces the Crawl "one INFO log line per missing source" (`ctx-adapter-system` §10 Q1) with a machine-readable declaration.
-- **On capability change:** a fresh manifest (`reason: capability_change`) when any source transitions state — e.g. GPU `present → failed` (driver crash) or `absent_by_design → present` (hot-plug). Not per-observation; only on a state edge.
+- **On capability change:** a fresh manifest (`reason: capability_change`) when any source transitions state — e.g. GPU `present → failed` (driver crash) or `absent_by_design → unexpected` (a hot-plugged source the `host_class` table didn't expect; §3). Not per-observation; only on a state edge.
 - Scoped to the host's **host-level umbrella `ScopeOperational`** (`HardwareClass=""`) via `HE_SCOPE_MEMBERSHIP`, so a consumer resolving a host's operational scope also finds its manifest.
 
 Distinct from the **heartbeat** (`ctx-adapter-system` §10 Q2): heartbeat = *liveness* ("adapter alive"); manifest = *capability* ("which sources, in which state"). Both are adapter-level, host-umbrella-scoped; they compose (a missed heartbeat = adapter down → the whole manifest is stale; a `failed` entry = adapter up, one source down).
@@ -83,6 +84,7 @@ This closes the federation-level false read where silence was ambiguous. The `ct
 - [x] **Manifest schema designed** — §2 (node + payload + `sources[]`) and §3 (states).
 - [x] **Adapter emits a manifest node at startup** — §4 (`NT_ADAPTER_CAPABILITY_MANIFEST`, startup + capability-change); *implementation* Walk-α / BMA-implementor, per the issue's own "no Crawl action required" scope.
 - [x] **Cross-host correlation references the manifest, not signal-inference** — §5, plus the pointer to fold into `ctx-adapter-system.md` §5.
+- [ ] **Walk-α executable-spec coverage (inter#207 lock-scope):** the Walk-α implementation's executable spec includes an **end-to-end consumer-interface test** proving `absent_by_design` GPU silence raises no anomaly and `failed` does. Implementation-side (BMA-implementor); tracked here, not built here.
 - [ ] **§I4 reader-list:** @wyrd-implementor (node type / substrate) · @qbp-architecture (federation coherence). ← review gate, on the PR.
 
 ## 8. References
